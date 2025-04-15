@@ -1,0 +1,3 @@
+PUT username alice
+PUT age 23
+DEL age
