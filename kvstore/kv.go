@@ -41,7 +41,7 @@ func DPrintf(format string, a ...interface{}) {
 }
 
 func NewKV(filepath string) (*KV, error) {
-	file, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0644)
+	file, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		return nil, err
 	}

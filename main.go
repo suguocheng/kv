@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"kv/kvstore"
+	"kv/server"
+	"net"
 )
 
 func main() {
@@ -12,11 +14,19 @@ func main() {
 	}
 	defer kv.Close()
 
-	kv.Put("username", "alice")
-	kv.Put("age", "23")
+	listener, err := net.Listen("tcp", ":8888")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("KV server is running at :8888")
 
-	val, _ := kv.Get("username")
-	fmt.Println("username:", val)
-
-	kv.Delete("age")
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			fmt.Println("Accept error:", err)
+			continue
+		}
+		fmt.Println("a client is connected")
+		go server.HandleConnection(conn, kv)
+	}
 }
