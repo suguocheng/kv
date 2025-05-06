@@ -89,6 +89,10 @@ func (kv *KV) Put(key, value string) error {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
 
+	if _, exists := kv.store[key]; exists {
+		return errors.New("key already exists")
+	}
+
 	logEntry := fmt.Sprintf("PUT %s %s\n", key, value)
 	_, err := kv.writer.WriteString(logEntry)
 	if err != nil {
@@ -106,7 +110,7 @@ func (kv *KV) Get(key string) (string, error) {
 
 	val, ok := kv.store[key]
 	if !ok {
-		return "", errors.New("key not found")
+		return "", errors.New("key does not exist")
 	}
 
 	return val, nil
@@ -115,6 +119,10 @@ func (kv *KV) Get(key string) (string, error) {
 func (kv *KV) Delete(key string) error {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
+
+	if _, exists := kv.store[key]; !exists {
+		return errors.New("key does not exist")
+	}
 
 	logEntry := fmt.Sprintf("DEL %s\n", key)
 	_, err := kv.writer.WriteString(logEntry)

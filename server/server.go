@@ -35,8 +35,12 @@ func HandleConnection(conn net.Conn, kv *kvstore.KV) {
 			if len(parts) != 3 {
 				response = "ERR: usage PUT key value\n"
 			} else {
-				kv.Put(parts[1], parts[2])
-				response = "OK\n"
+				ok := kv.Put(parts[1], parts[2])
+				if ok == nil {
+					response = "OK\n"
+				} else {
+					response = "key already exists\n"
+				}
 			}
 		case "GET":
 			if len(parts) != 2 {
@@ -46,15 +50,19 @@ func HandleConnection(conn net.Conn, kv *kvstore.KV) {
 				if ok == nil {
 					response = val + "\n"
 				} else {
-					response = "NOTFOUND\n"
+					response = "key does not exist\n"
 				}
 			}
 		case "DEL":
 			if len(parts) != 2 {
 				response = "ERR: usage DEL key\n"
 			} else {
-				kv.Delete(parts[1])
-				response = "OK\n"
+				ok := kv.Delete(parts[1])
+				if ok == nil {
+					response = "OK\n"
+				} else {
+					response = "key does not exist\n"
+				}
 			}
 		default:
 			response = "ERR: unknown command\n"
