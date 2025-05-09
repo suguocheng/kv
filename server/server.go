@@ -37,6 +37,7 @@ func HandleConnection(conn net.Conn, kv *kvstore.KV) {
 			} else {
 				ok := kv.Put(parts[1], parts[2])
 				if ok == nil {
+					Replicate("PUT", parts[1], parts[2])
 					response = "OK\n"
 				} else {
 					response = "key already exists\n"
@@ -59,6 +60,7 @@ func HandleConnection(conn net.Conn, kv *kvstore.KV) {
 			} else {
 				ok := kv.Delete(parts[1])
 				if ok == nil {
+					Replicate("DEL", parts[1], "")
 					response = "OK\n"
 				} else {
 					response = "key does not exist\n"
