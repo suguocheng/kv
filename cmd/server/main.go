@@ -1,41 +1,74 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"kv/kvstore"
+	"kv/raft"
 	"kv/server"
 	"net"
-	"strings"
+	"os"
+	"strconv"
 )
 
 func main() {
-	followers := flag.String("followers", "", "comma-separated list of follower addresses")
-	flag.Parse()
+	//配置
+	args := os.Args
+	if len(args) != 2 {
+		fmt.Println("Usage: go run main.go <nodeID>")
+		os.Exit(1)
+	}
+	me, _ := strconv.Atoi(args[1]) //当前节点 ID
 
-	kv, err := kvstore.NewKV("store.log")
+	peerAddrs := map[int]string{
+		0: "localhost:8000",
+		1: "localhost:8001",
+		2: "localhost:8002",
+	}
+
+	myAddr := peerAddrs[me]
+	raftLogPath := fmt.Sprintf("logs/raft-%d.log", me)
+	kvLogPath := fmt.Sprintf("logs/store-%d.log", me)
+
+	//启动 applyCh 和模块
+	applyCh := make(chan raft.ApplyMsg)
+	rf := raft.Make(me, peerAddrs, myAddr, applyCh, raftLogPath)
+	kv, err := kvstore.NewKV(kvLogPath)
 	if err != nil {
 		panic(err)
 	}
 	defer kv.Close()
 
-	// 设置 follower 地址
-	if *followers != "" {
-		server.SetFollowers(strings.Split(*followers, ","))
-	}
+	//监听 applyCh：Raft 已提交日志应用到 KV
+	go func() {
+		for msg := range applyCh {
+			if msg.CommandValid {
+				op, ok := msg.Command.(kvstore.Op)
+				if !ok {
+					fmt.Println("Invalid command in applyCh")
+					continue
+				}
+				switch op.Type {
+				case "Put":
+					kv.Put(op.Key, op.Value)
+				case "Del":
+					kv.Delete(op.Key)
+				}
+			}
+		}
+	}()
 
-	listener, err := net.Listen("tcp", ":8888")
+	//启动 TCP 服务器，监听客户端连接
+	ln, err := net.Listen("tcp", myAddr)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("KV server is running at :8888")
+	fmt.Println("Node", me, "listening on", myAddr)
 
 	for {
-		conn, err := listener.Accept()
+		conn, err := ln.Accept()
 		if err != nil {
-			fmt.Println("Accept error:", err)
 			continue
 		}
-		go server.HandleConnection(conn, kv)
+		go server.HandleConnection(conn, kv, rf)
 	}
 }

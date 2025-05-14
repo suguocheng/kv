@@ -2,74 +2,69 @@ package server
 
 import (
 	"bufio"
-	"fmt"
 	"kv/kvstore"
+	"kv/raft"
 	"net"
 	"strings"
 )
 
-// HandleConnection 处理一个客户端连接
-func HandleConnection(conn net.Conn, kv *kvstore.KV) {
+func HandleConnection(conn net.Conn, kv *kvstore.KV, rf *raft.Raft) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Println("Connection closed:", err)
 			return
 		}
-
-		line = strings.TrimSpace(line)
-		parts := strings.SplitN(line, " ", 3)
-
+		parts := strings.Fields(strings.TrimSpace(line))
 		if len(parts) == 0 {
-			conn.Write([]byte("ERR: empty command\n"))
 			continue
 		}
 
-		var response string
+		cmd := strings.ToUpper(parts[0])
 
-		switch parts[0] {
-		case "PUT":
-			if len(parts) != 3 {
-				response = "ERR: usage PUT key value\n"
-			} else {
-				ok := kv.Put(parts[1], parts[2])
-				if ok == nil {
-					Replicate("PUT", parts[1], parts[2])
-					response = "OK\n"
-				} else {
-					response = "key already exists\n"
-				}
-			}
+		switch cmd {
 		case "GET":
 			if len(parts) != 2 {
-				response = "ERR: usage GET key\n"
-			} else {
-				val, ok := kv.Get(parts[1])
-				if ok == nil {
-					response = val + "\n"
-				} else {
-					response = "key does not exist\n"
-				}
+				conn.Write([]byte("ERR Usage: GET key\n"))
+				continue
 			}
+			val, ok := kv.Get(parts[1])
+			if ok == nil {
+				conn.Write([]byte("OK " + val + "\n"))
+			} else {
+				conn.Write([]byte("NOTFOUND\n"))
+			}
+
+		case "PUT":
+			if len(parts) != 3 {
+				conn.Write([]byte("ERR Usage: PUT key value\n"))
+				continue
+			}
+			op := kvstore.Op{Type: "Put", Key: parts[1], Value: parts[2]}
+			_, _, isLeader := rf.Start(op)
+			if isLeader {
+				conn.Write([]byte("OK\n"))
+			} else {
+				conn.Write([]byte("ERR Not Leader\n"))
+			}
+
 		case "DEL":
 			if len(parts) != 2 {
-				response = "ERR: usage DEL key\n"
-			} else {
-				ok := kv.Delete(parts[1])
-				if ok == nil {
-					Replicate("DEL", parts[1], "")
-					response = "OK\n"
-				} else {
-					response = "key does not exist\n"
-				}
+				conn.Write([]byte("ERR Usage: DEL key\n"))
+				continue
 			}
-		default:
-			response = "ERR: unknown command\n"
-		}
+			op := kvstore.Op{Type: "Del", Key: parts[1]}
+			_, _, isLeader := rf.Start(op)
+			if isLeader {
+				conn.Write([]byte("OK\n"))
+			} else {
+				conn.Write([]byte("ERR Not Leader\n"))
+			}
 
-		conn.Write([]byte(response))
+		default:
+			conn.Write([]byte("ERR Unknown command\n"))
+		}
 	}
 }
