@@ -79,4 +79,4 @@ func (rf *Raft) getLastLog() LogEntry {
 
 func (rf *Raft) getFirstLog() LogEntry {
 	return rf.logs[0]
-}
+} 
