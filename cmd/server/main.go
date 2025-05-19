@@ -25,7 +25,8 @@ func main() {
 		2: "localhost:8002",
 	}
 
-	myAddr := peerAddrs[me]
+	clientPort := 9000 + me
+	myAddr := fmt.Sprintf("localhost:%d", clientPort)
 	raftLogPath := fmt.Sprintf("logs/raft-%d.log", me)
 	kvLogPath := fmt.Sprintf("logs/store-%d.log", me)
 

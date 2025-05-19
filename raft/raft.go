@@ -403,7 +403,8 @@ func Make(me int, peerAddrs map[int]string, myAddr string, applyCh chan ApplyMsg
 	// 启动本地 RPC 监听
 	go func() {
 		rpc.Register(rf)
-		ln, err := net.Listen("tcp", myAddr)
+		raftAddr := peerAddrs[me] // 使用 Raft 通信端口（如8000）
+		ln, err := net.Listen("tcp", raftAddr)
 		if err != nil {
 			log.Fatalf("Raft %d listen error: %v", me, err)
 		}
@@ -421,12 +422,22 @@ func Make(me int, peerAddrs map[int]string, myAddr string, applyCh chan ApplyMsg
 		if id == me {
 			continue
 		}
-		client, err := rpc.Dial("tcp", addr)
-		if err != nil {
-			log.Printf("Raft %d dial peer %d failed: %v", me, id, err)
-			continue
-		}
-		rf.peers[id] = client
+		go func(id int, addr string) {
+			retries := 0
+			maxRetries := 5
+			for retries < maxRetries {
+				client, err := rpc.Dial("tcp", addr)
+				if err == nil {
+					rf.mu.Lock()
+					rf.peers[id] = client
+					rf.mu.Unlock()
+					return
+				}
+				time.Sleep(time.Duration(retries*100) * time.Millisecond)
+				retries++
+			}
+			log.Printf("Raft %d failed to connect peer %d after retries", me, id)
+		}(id, addr)
 	}
 
 	// 启动主循环
