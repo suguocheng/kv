@@ -1,0 +1,484 @@
+Empty log file, no state to restore
+Node 0 listening on localhost:9000
+2025/06/05 18:19:21 raft.go:351: Server 0 start election
+2025/06/05 18:19:21 raft.go:388: server 0 become Leader
+2025/06/05 18:19:21 raft.go:183: Leader 0 broadcasting AppendEntries, Term 1, isHeartbeat true
+2025/06/05 18:19:21 raft.go:210: Leader 0 sending AppendEntries to Follower 1: PrevLogIndex=0, Entries=[] LeaderCommit=0
+2025/06/05 18:19:21 raft.go:235: Follower 1 successfully replicated log, nextIndex=1
+2025/06/05 18:19:21 raft.go:183: Leader 0 broadcasting AppendEntries, Term 1, isHeartbeat true
+2025/06/05 18:19:21 raft.go:210: Leader 0 sending AppendEntries to Follower 1: PrevLogIndex=0, Entries=[] LeaderCommit=0
+2025/06/05 18:19:21 raft.go:235: Follower 1 successfully replicated log, nextIndex=1
+2025/06/05 18:19:21 raft.go:183: Leader 0 broadcasting AppendEntries, Term 1, isHeartbeat true
+2025/06/05 18:19:21 raft.go:210: Leader 0 sending AppendEntries to Follower 1: PrevLogIndex=0, Entries=[] LeaderCommit=0
+2025/06/05 18:19:21 raft.go:235: Follower 1 successfully replicated log, nextIndex=1
+2025/06/05 18:19:21 raft.go:183: Leader 0 broadcasting AppendEntries, Term 1, isHeartbeat true
+2025/06/05 18:19:21 raft.go:210: Leader 0 sending AppendEntries to Follower 1: PrevLogIndex=0, Entries=[] LeaderCommit=0
+2025/06/05 18:19:21 raft.go:235: Follower 1 successfully replicated log, nextIndex=1
+2025/06/05 18:19:21 raft.go:183: Leader 0 broadcasting AppendEntries, Term 1, isHeartbeat true
+2025/06/05 18:19:21 raft.go:210: Leader 0 sending AppendEntries to Follower 1: PrevLogIndex=0, Entries=[] LeaderCommit=0
+2025/06/05 18:19:21 raft.go:235: Follower 1 successfully replicated log, nextIndex=1
+2025/06/05 18:19:21 raft.go:183: Leader 0 broadcasting AppendEntries, Term 1, isHeartbeat true
+2025/06/05 18:19:21 raft.go:210: Leader 0 sending AppendEntries to Follower 1: PrevLogIndex=0, Entries=[] LeaderCommit=0
+2025/06/05 18:19:21 raft.go:235: Follower 1 successfully replicated log, nextIndex=1
+2025/06/05 18:19:22 raft.go:183: Leader 0 broadcasting AppendEntries, Term 1, isHeartbeat true
+2025/06/05 18:19:22 raft.go:210: Leader 0 sending AppendEntries to Follower 1: PrevLogIndex=0, Entries=[] LeaderCommit=0
+2025/06/05 18:19:22 raft.go:235: Follower 1 successfully replicated log, nextIndex=1
+2025/06/05 18:19:22 raft.go:183: Leader 0 broadcasting AppendEntries, Term 1, isHeartbeat true
+2025/06/05 18:19:22 raft.go:210: Leader 0 sending AppendEntries to Follower 1: PrevLogIndex=0, Entries=[] LeaderCommit=0
+2025/06/05 18:19:22 raft.go:235: Follower 1 successfully replicated log, nextIndex=1
+2025/06/05 18:19:22 raft.go:183: Leader 0 broadcasting AppendEntries, Term 1, isHeartbeat true
+2025/06/05 18:19:22 raft.go:210: Leader 0 sending AppendEntries to Follower 1: PrevLogIndex=0, Entries=[] LeaderCommit=0
+2025/06/05 18:19:22 raft.go:235: Follower 1 successfully replicated log, nextIndex=1
+2025/06/05 18:19:22 raft.go:183: Leader 0 broadcasting AppendEntries, Term 1, isHeartbeat true
+2025/06/05 18:19:22 raft.go:210: Leader 0 sending AppendEntries to Follower 1: PrevLogIndex=0, Entries=[] LeaderCommit=0
+2025/06/05 18:19:22 raft.go:235: Follower 1 successfully replicated log, nextIndex=1
+2025/06/05 18:19:22 raft.go:183: Leader 0 broadcasting AppendEntries, Term 1, isHeartbeat true
+2025/06/05 18:19:22 raft.go:210: Leader 0 sending AppendEntries to Follower 1: PrevLogIndex=0, Entries=[] LeaderCommit=0
+2025/06/05 18:19:22 raft.go:235: Follower 1 successfully replicated log, nextIndex=1
+2025/06/05 18:19:22 raft.go:183: Leader 0 broadcasting AppendEntries, Term 1, isHeartbeat true
+2025/06/05 18:19:22 raft.go:210: Leader 0 sending AppendEntries to Follower 1: PrevLogIndex=0, Entries=[] LeaderCommit=0
+2025/06/05 18:19:22 raft.go:235: Follower 1 successfully replicated log, nextIndex=1
+2025/06/05 18:19:22 raft.go:183: Leader 0 broadcasting AppendEntries, Term 1, isHeartbeat true
+2025/06/05 18:19:22 raft.go:210: Leader 0 sending AppendEntries to Follower 1: PrevLogIndex=0, Entries=[] LeaderCommit=0
+2025/06/05 18:19:22 raft.go:235: Follower 1 successfully replicated log, nextIndex=1
+2025/06/05 18:19:22 raft.go:183: Leader 0 broadcasting AppendEntries, Term 1, isHeartbeat true
+2025/06/05 18:19:22 raft.go:210: Leader 0 sending AppendEntries to Follower 1: PrevLogIndex=0, Entries=[] LeaderCommit=0
+2025/06/05 18:19:22 raft.go:235: Follower 1 successfully replicated log, nextIndex=1
+2025/06/05 18:19:23 raft.go:183: Leader 0 broadcasting AppendEntries, Term 1, isHeartbeat true
+2025/06/05 18:19:23 raft.go:210: Leader 0 sending AppendEntries to Follower 1: PrevLogIndex=0, Entries=[] LeaderCommit=0
+2025/06/05 18:19:23 raft.go:235: Follower 1 successfully replicated log, nextIndex=1
+2025/06/05 18:19:23 rpc.go:73: Follower 0 don't vote for Candidate 2
+2025/06/05 18:19:23 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:23 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:23 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:23 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:23 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:23 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:23 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:23 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:23 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:23 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:23 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:23 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:23 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:23 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:23 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:23 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:23 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:23 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:23 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:23 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:23 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:24 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:24 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:24 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:24 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:24 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:24 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:24 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:24 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:24 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:24 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:24 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:24 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:24 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:24 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:24 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:24 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:24 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:24 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:24 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:24 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:24 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:24 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:24 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:24 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:25 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:25 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:25 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:25 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:25 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:25 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:25 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:25 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:25 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:25 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:25 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:25 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:25 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:25 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:25 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:25 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:25 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:25 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:25 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:25 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:25 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:25 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:25 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:25 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:26 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:26 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:26 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:26 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:26 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:26 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:26 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:26 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:26 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:26 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:26 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:26 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:26 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:26 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:26 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:26 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:26 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:26 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:26 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:26 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:26 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:26 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:26 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:26 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:27 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:27 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:27 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:27 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:27 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:27 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:27 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:27 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:27 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:27 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:27 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:27 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:27 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:27 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:27 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:27 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:27 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:27 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:27 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:27 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:27 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:27 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:27 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:27 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:28 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:28 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:28 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:28 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:28 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:28 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:28 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:28 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:28 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:28 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:28 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:28 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:28 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:28 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:28 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:28 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:28 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:28 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:28 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:28 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:28 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:28 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:28 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:28 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:29 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:29 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:29 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:29 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:29 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:29 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:29 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:29 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:29 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:29 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:29 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:29 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:29 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:29 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:29 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:29 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:29 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:29 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:29 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:29 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:29 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:29 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:29 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:29 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:30 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:30 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:30 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:30 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:30 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:30 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:30 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:30 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:30 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:30 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:30 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:30 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:30 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:30 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:30 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:30 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:30 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:30 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:30 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:30 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:30 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:30 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:30 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:30 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:31 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:31 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:31 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:31 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:31 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:31 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:31 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:31 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:31 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:31 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:31 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:31 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:31 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:31 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:31 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:31 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:31 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:31 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:31 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:31 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:31 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:31 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:31 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:31 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:32 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:32 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:32 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:32 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:32 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:32 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:32 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:32 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:32 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:32 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:32 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:32 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:32 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:32 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:32 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:32 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:32 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:32 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:32 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:32 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:32 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:32 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:32 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:32 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:33 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:33 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:33 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:33 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:33 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:33 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:33 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:33 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:33 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:33 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:33 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:33 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:33 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:33 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:33 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:33 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:33 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:33 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:33 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:33 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:33 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:33 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:33 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:33 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:34 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:34 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:34 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:34 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:34 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:34 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:34 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:34 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:34 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:34 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:34 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:34 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:34 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:34 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:34 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:34 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:34 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:34 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:34 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:34 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:34 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:34 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:34 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:34 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:35 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:35 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:35 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:35 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:35 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:35 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:35 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:35 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:35 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:35 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:35 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:35 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:35 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:35 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:35 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:35 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:35 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:35 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:35 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:35 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:35 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:35 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:35 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:35 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:36 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:36 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:36 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:36 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:36 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:36 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:36 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:36 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:36 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:36 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:36 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:36 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:36 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:36 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:36 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:36 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:36 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:36 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:36 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:36 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:36 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:36 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:36 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:36 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:37 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:37 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:37 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:37 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[], commitIndex=0
+2025/06/05 18:19:37 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:37 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0}]
+2025/06/05 18:19:37 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=0, PrevLogTerm=0, Entries=[{{Put 1 1} 1 1}], commitIndex=0
+2025/06/05 18:19:37 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:37 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:37 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:37 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:37 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:37 rpc.go:167: Follower 0 successfully update commitIndex. New commitIndex=1
+2025/06/05 18:19:37 raft.go:299: server 0 applier: Applying logs from index 1 to 1
+2025/06/05 18:19:37 raft.go:302: server 0 applier: Applying log: Index=1, Command={Put 1 1}
+2025/06/05 18:19:37 raft.go:312: server 0 applier: Finished applying logs up to commitIndex=1
+2025/06/05 18:19:37 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:37 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:37 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:37 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:37 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:37 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:37 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:37 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:37 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:37 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:37 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:37 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:37 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:37 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:37 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:38 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:38 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:38 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:38 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:38 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:38 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:38 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:38 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:38 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:38 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:38 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:38 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:38 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:38 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:38 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:38 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:38 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:38 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:38 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:38 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:38 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:38 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:38 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:38 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:39 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:39 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:39 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:39 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:39 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:39 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:39 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:39 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:39 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:39 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:39 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:39 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:39 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:39 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:39 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:39 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:39 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:39 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:39 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:39 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:39 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:39 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:39 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:39 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:40 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:40 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:40 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:40 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:40 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:40 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:40 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:40 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:40 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:40 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:40 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:40 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:40 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:40 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:40 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:40 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:40 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:40 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:40 rpc.go:94: Follower 0 received Leader 2 AppendEntries: PrevLogIndex=1, PrevLogTerm=1, Entries=[], commitIndex=1
+2025/06/05 18:19:40 rpc.go:98: Follower 0 term 1 is outdated, switching to follower
+2025/06/05 18:19:40 rpc.go:161: Follower 0 copy successed: Entries=[{<nil> 0 0} {{Put 1 1} 1 1}]
+2025/06/05 18:19:41 raft.go:351: Server 0 start election

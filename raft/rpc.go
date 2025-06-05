@@ -179,6 +179,9 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *AppendEntriesReply) bool {
 	client := rf.peers[server]
 	err := client.Call("Raft.AppendEntries", args, reply)
+	if err != nil {
+		DPrintf("[RPC] AppendEntries to %d failed: %v", server, err)
+	}
 	return err == nil
 }
 
