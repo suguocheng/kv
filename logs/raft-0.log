@@ -1,1 +1,0 @@
-{"currentTerm":2,"voteFor":0,"logs":[{"Command":null,"Term":0,"Index":0},{"Command":{"type":"Put","key":"1","value":"1"},"Term":1,"Index":1}]}

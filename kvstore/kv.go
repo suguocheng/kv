@@ -2,9 +2,10 @@ package kvstore
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/gob"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"sync"
@@ -22,22 +23,6 @@ type KV struct {
 	writer  *bufio.Writer
 	store   map[string]string
 	mu      sync.RWMutex
-}
-
-var logger *log.Logger
-
-func init() {
-	// 创建带文件名和行号的 Logger
-	logger = log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile)
-}
-
-// Debugging
-const Debug = false
-
-func DPrintf(format string, a ...interface{}) {
-	if Debug {
-		logger.Output(2, fmt.Sprintf(format, a...))
-	}
 }
 
 func NewKV(filepath string) (*KV, error) {
@@ -138,4 +123,11 @@ func (kv *KV) Delete(key string) error {
 func (kv *KV) Close() error {
 	kv.writer.Flush()
 	return kv.logFile.Close()
+}
+
+func (kv *KV) SerializeState() []byte {
+	var buffer bytes.Buffer
+	encoder := gob.NewEncoder(&buffer)
+	encoder.Encode(kv.store) // kv.store 是 map[string]string
+	return buffer.Bytes()
 }

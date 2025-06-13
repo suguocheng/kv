@@ -27,17 +27,20 @@ func main() {
 
 	clientPort := 9000 + me
 	myAddr := fmt.Sprintf("localhost:%d", clientPort)
-	raftLogPath := fmt.Sprintf("logs/raft-%d.log", me)
-	kvLogPath := fmt.Sprintf("logs/store-%d.log", me)
+	raftstatePath := fmt.Sprintf("data/node%d/raft-state.gob", me)
+	raftsnapshotPath := fmt.Sprintf("data/node%d/snapshot.gob", me)
+	kvLogPath := fmt.Sprintf("data/node%d/command.log", me)
 
 	//启动 applyCh 和模块
 	applyCh := make(chan raft.ApplyMsg)
-	rf := raft.Make(me, peerAddrs, myAddr, applyCh, raftLogPath)
+	rf := raft.Make(me, peerAddrs, myAddr, applyCh, raftstatePath, raftsnapshotPath)
 	kv, err := kvstore.NewKV(kvLogPath)
 	if err != nil {
 		panic(err)
 	}
 	defer kv.Close()
+
+	lastSnapshottedIndex := 0
 
 	//监听 applyCh：Raft 已提交日志应用到 KV
 	go func() {
@@ -53,6 +56,12 @@ func main() {
 					kv.Put(op.Key, op.Value)
 				case "Del":
 					kv.Delete(op.Key)
+				}
+
+				if msg.CommandIndex-lastSnapshottedIndex >= 5 {
+					snapshot := kv.SerializeState()
+					rf.Snapshot(msg.CommandIndex, snapshot)
+					lastSnapshottedIndex = msg.CommandIndex
 				}
 			}
 		}

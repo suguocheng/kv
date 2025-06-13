@@ -32,7 +32,7 @@ func HandleConnection(conn net.Conn, kv *kvstore.KV, rf *raft.Raft) {
 			}
 			val, ok := kv.Get(parts[1])
 			if ok == nil {
-				conn.Write([]byte("OK " + val + "\n"))
+				conn.Write([]byte(val + "\n"))
 			} else {
 				conn.Write([]byte("NOTFOUND\n"))
 			}
