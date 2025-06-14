@@ -2,8 +2,8 @@ package raft
 
 import (
 	"encoding/gob"
-	"kv/kvstore"
 	"kv/log"
+	"kv/pkg/kvstore"
 	"net"
 	"net/rpc"
 	"sync"

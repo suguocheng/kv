@@ -2,8 +2,8 @@ package server
 
 import (
 	"bufio"
-	"kv/kvstore"
-	"kv/raft"
+	"kv/pkg/kvstore"
+	"kv/pkg/raft"
 	"net"
 	"strings"
 )

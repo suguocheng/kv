@@ -8,8 +8,8 @@ import (
 	"log"
 	"os"
 
-	"kv/kvstore"
-	"kv/raft"
+	"kv/pkg/kvstore"
+	"kv/pkg/raft"
 )
 
 func init() {

@@ -11,12 +11,12 @@ import (
 	"sync"
 )
 
-type KVStore interface {
-	NewKV(filepath string) (*KV, error)
-	Put(key string, value string) error
-	Get(key string) (string, error)
-	Delete(key string) error
-}
+// type KVStore interface {
+// 	NewKV(filepath string) (*KV, error)
+// 	Put(key string, value string) error
+// 	Get(key string) (string, error)
+// 	Delete(key string) error
+// }
 
 type KV struct {
 	logFile *os.File
@@ -128,6 +128,6 @@ func (kv *KV) Close() error {
 func (kv *KV) SerializeState() []byte {
 	var buffer bytes.Buffer
 	encoder := gob.NewEncoder(&buffer)
-	encoder.Encode(kv.store) // kv.store 是 map[string]string
+	encoder.Encode(kv.store)
 	return buffer.Bytes()
 }

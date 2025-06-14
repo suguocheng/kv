@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"kv/kvstore"
-	"kv/raft"
-	"kv/server"
+	"kv/pkg/kvstore"
+	"kv/pkg/raft"
+	"kv/pkg/server"
 	"net"
 	"os"
 	"strconv"
@@ -34,6 +34,8 @@ func main() {
 	//启动 applyCh 和模块
 	applyCh := make(chan raft.ApplyMsg)
 	rf := raft.Make(me, peerAddrs, myAddr, applyCh, raftstatePath, raftsnapshotPath)
+
+	//创建 kv
 	kv, err := kvstore.NewKV(kvLogPath)
 	if err != nil {
 		panic(err)
@@ -74,6 +76,7 @@ func main() {
 	}
 	fmt.Println("Node", me, "listening on", myAddr)
 
+	//单开携程处理操作
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
