@@ -9,7 +9,7 @@ import (
 )
 
 type Client struct {
-	servers []string // 节点地址列表，如 ["127.0.0.1:9000", "127.0.0.1:9001", ...]
+	servers []string // 节点地址列表
 	leader  int      // 上一次成功的 leader index
 }
 
@@ -22,7 +22,30 @@ func NewClient(servers []string) *Client {
 
 // 向 Leader 发送命令（自动发现 Leader）
 func (c *Client) SendCommand(cmd string) (string, error) {
-	// 优先尝试上次成功的 Leader
+	cmdType := strings.ToUpper(strings.Fields(cmd)[0])
+	isRead := (cmdType == "GET")
+
+	// 对于 GET 请求，任意一个节点即可
+	if isRead {
+		for _, addr := range c.servers {
+			conn, err := net.DialTimeout("tcp", addr, 500*time.Millisecond)
+			if err != nil {
+				continue
+			}
+			defer conn.Close()
+
+			fmt.Fprintln(conn, cmd)
+
+			reply, err := bufio.NewReader(conn).ReadString('\n')
+			if err != nil {
+				continue
+			}
+			return strings.TrimSpace(reply), nil
+		}
+		return "", fmt.Errorf("no node available for GET")
+	}
+
+	// 对于 PUT / DEL 请求，必须找 Leader
 	for i := 0; i < len(c.servers); i++ {
 		idx := (c.leader + i) % len(c.servers)
 		addr := c.servers[idx]
@@ -33,25 +56,21 @@ func (c *Client) SendCommand(cmd string) (string, error) {
 		}
 		defer conn.Close()
 
-		// 发送命令
 		fmt.Fprintln(conn, cmd)
 
-		// 读取返回
 		reply, err := bufio.NewReader(conn).ReadString('\n')
 		if err != nil {
 			continue
 		}
 		reply = strings.TrimSpace(reply)
 
-		// 判断是否是 Leader 响应
-		if reply == "NOT_LEADER" {
+		if reply == "Not_Leader" {
 			continue
 		}
 
-		// 成功响应
-		c.leader = idx // 更新缓存
+		c.leader = idx
 		return reply, nil
 	}
 
-	return "", fmt.Errorf("no available leader found")
+	return "", fmt.Errorf("no available leader found for %s", cmdType)
 }

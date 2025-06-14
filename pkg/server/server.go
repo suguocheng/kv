@@ -47,7 +47,7 @@ func HandleConnection(conn net.Conn, kv *kvstore.KV, rf *raft.Raft) {
 			if isLeader {
 				conn.Write([]byte("OK\n"))
 			} else {
-				conn.Write([]byte("ERR Not Leader\n"))
+				conn.Write([]byte("Not_Leader\n"))
 			}
 
 		case "DEL":
@@ -60,7 +60,7 @@ func HandleConnection(conn net.Conn, kv *kvstore.KV, rf *raft.Raft) {
 			if isLeader {
 				conn.Write([]byte("OK\n"))
 			} else {
-				conn.Write([]byte("ERR Not Leader\n"))
+				conn.Write([]byte("Not_Leader\n"))
 			}
 
 		default:
