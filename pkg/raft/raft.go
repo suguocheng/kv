@@ -35,12 +35,6 @@ type ApplyMsg struct {
 	SnapshotIndex int
 }
 
-type PersistentState struct {
-	CurrentTerm int
-	VoteFor     int
-	Logs        []LogEntry
-}
-
 // A Go object implementing a single Raft peer.
 type Raft struct {
 	mu             sync.RWMutex

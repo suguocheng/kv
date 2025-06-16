@@ -8,6 +8,12 @@ import (
 	"os"
 )
 
+type PersistentState struct {
+	CurrentTerm int
+	VoteFor     int
+	Logs        []LogEntry
+}
+
 func (rf *Raft) persist() {
 	state := PersistentState{
 		CurrentTerm: rf.currentTerm,

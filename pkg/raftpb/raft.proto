@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package raftpb;
+
+option go_package = "kv/pkg/raftpb"; // 调整为你的 go 模块路径
+
+message LogEntry {
+  int32 index = 1;
+  int32 term = 2;
+  bytes command = 3; // 原 interface{} 改为序列化字节
+}
+
+message PersistentState {
+  int32 current_term = 1;
+  int32 vote_for = 2;
+  repeated LogEntry logs = 3;
+}

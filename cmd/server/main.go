@@ -10,41 +10,78 @@ import (
 	"strconv"
 )
 
+type NodeConfig struct {
+	Me            int
+	ClientAddr    string
+	PeerAddrs     map[int]string
+	RaftStatePath string
+	SnapshotPath  string
+	KVLogPath     string
+}
+
 func main() {
-	//配置
-	args := os.Args
-	if len(args) != 2 {
+	me := parseNodeID()
+	conf := loadNodeConfig(me)
+
+	kv := initKV(conf.KVLogPath)
+	defer kv.Close()
+
+	rf, applyCh := initRaft(conf, kv)
+
+	startApplyLoop(rf, kv, applyCh)
+
+	startClientListener(conf.ClientAddr, kv, rf)
+}
+
+func parseNodeID() int {
+	if len(os.Args) != 2 {
 		fmt.Println("Usage: go run main.go <nodeID>")
 		os.Exit(1)
 	}
-	me, _ := strconv.Atoi(args[1]) //当前节点 ID
+	id, err := strconv.Atoi(os.Args[1])
+	if err != nil {
+		panic("Invalid node ID")
+	}
+	return id
+}
 
+func loadNodeConfig(me int) *NodeConfig {
 	peerAddrs := map[int]string{
 		0: "localhost:8000",
 		1: "localhost:8001",
 		2: "localhost:8002",
 	}
-
 	clientPort := 9000 + me
-	myAddr := fmt.Sprintf("localhost:%d", clientPort)
-	raftstatePath := fmt.Sprintf("data/node%d/raft-state.gob", me)
-	raftsnapshotPath := fmt.Sprintf("data/node%d/snapshot.gob", me)
-	kvLogPath := fmt.Sprintf("data/node%d/command.log", me)
 
-	//启动 applyCh 和模块
-	applyCh := make(chan raft.ApplyMsg)
-	rf := raft.Make(me, peerAddrs, myAddr, applyCh, raftstatePath, raftsnapshotPath)
+	return &NodeConfig{
+		Me:            me,
+		ClientAddr:    fmt.Sprintf("localhost:%d", clientPort),
+		PeerAddrs:     peerAddrs,
+		RaftStatePath: fmt.Sprintf("data/node%d/raft-state.gob", me),
+		SnapshotPath:  fmt.Sprintf("data/node%d/snapshot.gob", me),
+		KVLogPath:     fmt.Sprintf("data/node%d/command.log", me),
+	}
+}
 
-	//创建 kv
-	kv, err := kvstore.NewKV(kvLogPath)
+func initKV(path string) *kvstore.KV {
+	kv, err := kvstore.NewKV(path)
 	if err != nil {
 		panic(err)
 	}
-	defer kv.Close()
+	return kv
+}
 
+func initRaft(conf *NodeConfig, kv *kvstore.KV) (*raft.Raft, chan raft.ApplyMsg) {
+	applyCh := make(chan raft.ApplyMsg)
+	rf := raft.Make(conf.Me, conf.PeerAddrs, conf.ClientAddr, applyCh, conf.RaftStatePath, conf.SnapshotPath)
+
+	go startApplyLoop(rf, kv, applyCh)
+
+	return rf, applyCh
+}
+
+func startApplyLoop(rf *raft.Raft, kv *kvstore.KV, applyCh chan raft.ApplyMsg) {
 	lastSnapshottedIndex := 0
-
-	//监听 applyCh：Raft 已提交日志应用到 KV
 	go func() {
 		for msg := range applyCh {
 			if msg.CommandValid {
@@ -59,7 +96,6 @@ func main() {
 				case "Del":
 					kv.Delete(op.Key)
 				}
-
 				if msg.CommandIndex-lastSnapshottedIndex >= 5 {
 					snapshot := kv.SerializeState()
 					rf.Snapshot(msg.CommandIndex, snapshot)
@@ -68,15 +104,14 @@ func main() {
 			}
 		}
 	}()
+}
 
-	//启动 TCP 服务器，监听客户端连接
-	ln, err := net.Listen("tcp", myAddr)
+func startClientListener(addr string, kv *kvstore.KV, rf *raft.Raft) {
+	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Node", me, "listening on", myAddr)
-
-	//单开携程处理操作
+	fmt.Println("Listening on", addr)
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
