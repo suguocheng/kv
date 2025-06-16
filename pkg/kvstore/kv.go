@@ -2,13 +2,14 @@ package kvstore
 
 import (
 	"bufio"
-	"bytes"
-	"encoding/gob"
 	"errors"
 	"fmt"
+	"kv/pkg/kvpb"
 	"os"
 	"strings"
 	"sync"
+
+	"google.golang.org/protobuf/proto"
 )
 
 // type KVStore interface {
@@ -125,9 +126,18 @@ func (kv *KV) Close() error {
 	return kv.logFile.Close()
 }
 
-func (kv *KV) SerializeState() []byte {
-	var buffer bytes.Buffer
-	encoder := gob.NewEncoder(&buffer)
-	encoder.Encode(kv.store)
-	return buffer.Bytes()
+func (kv *KV) SerializeState() ([]byte, error) {
+	kvStore := &kvpb.KVStore{}
+	for k, v := range kv.store {
+		kvStore.Pairs = append(kvStore.Pairs, &kvpb.KVPair{
+			Key:   k,
+			Value: v,
+		})
+	}
+
+	data, err := proto.Marshal(kvStore)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }

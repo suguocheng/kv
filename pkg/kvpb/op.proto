@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package kvpb;
+
+option go_package = "kv/pkg/kvpb";
+
+message Op {
+  string type = 1;
+  string key = 2;
+  string value = 3;
+}

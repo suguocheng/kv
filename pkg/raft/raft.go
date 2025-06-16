@@ -1,9 +1,7 @@
 package raft
 
 import (
-	"encoding/gob"
 	"kv/log"
-	"kv/pkg/kvstore"
 	"net"
 	"net/rpc"
 	"sync"
@@ -11,20 +9,15 @@ import (
 	"time"
 )
 
-func init() {
-	gob.Register(kvstore.Op{})
-	gob.Register(LogEntry{})
-}
-
 type LogEntry struct {
-	Command interface{}
+	Command []byte
 	Term    int
 	Index   int
 }
 
 type ApplyMsg struct {
 	CommandValid bool
-	Command      interface{}
+	Command      []byte
 	CommandIndex int
 	CommandTerm  int
 
@@ -68,7 +61,7 @@ func (rf *Raft) GetState() (int, bool) {
 	return rf.currentTerm, rf.state == "Leader"
 }
 
-func (rf *Raft) Start(command interface{}) (int, int, bool) {
+func (rf *Raft) Start(command []byte) (int, int, bool) {
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
 

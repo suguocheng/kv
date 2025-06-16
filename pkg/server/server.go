@@ -2,10 +2,13 @@ package server
 
 import (
 	"bufio"
+	"kv/pkg/kvpb"
 	"kv/pkg/kvstore"
 	"kv/pkg/raft"
 	"net"
 	"strings"
+
+	"google.golang.org/protobuf/proto"
 )
 
 func HandleConnection(conn net.Conn, kv *kvstore.KV, rf *raft.Raft) {
@@ -42,8 +45,13 @@ func HandleConnection(conn net.Conn, kv *kvstore.KV, rf *raft.Raft) {
 				conn.Write([]byte("ERR Usage: PUT key value\n"))
 				continue
 			}
-			op := kvstore.Op{Type: "Put", Key: parts[1], Value: parts[2]}
-			_, _, isLeader := rf.Start(op)
+			op := &kvpb.Op{Type: "Put", Key: parts[1], Value: parts[2]}
+			data, err := proto.Marshal(op)
+			if err != nil {
+				conn.Write([]byte("ERR marshal failed\n"))
+				continue
+			}
+			_, _, isLeader := rf.Start(data)
 			if isLeader {
 				conn.Write([]byte("OK\n"))
 			} else {
@@ -55,8 +63,13 @@ func HandleConnection(conn net.Conn, kv *kvstore.KV, rf *raft.Raft) {
 				conn.Write([]byte("ERR Usage: DEL key\n"))
 				continue
 			}
-			op := kvstore.Op{Type: "Del", Key: parts[1]}
-			_, _, isLeader := rf.Start(op)
+			op := &kvpb.Op{Type: "Del", Key: parts[1]}
+			data, err := proto.Marshal(op)
+			if err != nil {
+				conn.Write([]byte("ERR marshal failed\n"))
+				continue
+			}
+			_, _, isLeader := rf.Start(data)
 			if isLeader {
 				conn.Write([]byte("OK\n"))
 			} else {

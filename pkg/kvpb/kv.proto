@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package kvpb;
+
+option go_package = "kv/pkg/kvpb";
+
+message KVPair {
+  string key = 1;
+  string value = 2;
+}
+
+message KVStore {
+  repeated KVPair pairs = 1;
+}

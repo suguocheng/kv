@@ -2,12 +2,15 @@ package main
 
 import (
 	"fmt"
+	"kv/pkg/kvpb"
 	"kv/pkg/kvstore"
 	"kv/pkg/raft"
 	"kv/pkg/server"
 	"net"
 	"os"
 	"strconv"
+
+	"google.golang.org/protobuf/proto"
 )
 
 type NodeConfig struct {
@@ -57,8 +60,8 @@ func loadNodeConfig(me int) *NodeConfig {
 		Me:            me,
 		ClientAddr:    fmt.Sprintf("localhost:%d", clientPort),
 		PeerAddrs:     peerAddrs,
-		RaftStatePath: fmt.Sprintf("data/node%d/raft-state.gob", me),
-		SnapshotPath:  fmt.Sprintf("data/node%d/snapshot.gob", me),
+		RaftStatePath: fmt.Sprintf("data/node%d/raft-state.pb", me),
+		SnapshotPath:  fmt.Sprintf("data/node%d/snapshot.pb", me),
 		KVLogPath:     fmt.Sprintf("data/node%d/command.log", me),
 	}
 }
@@ -85,19 +88,24 @@ func startApplyLoop(rf *raft.Raft, kv *kvstore.KV, applyCh chan raft.ApplyMsg) {
 	go func() {
 		for msg := range applyCh {
 			if msg.CommandValid {
-				op, ok := msg.Command.(kvstore.Op)
-				if !ok {
-					fmt.Println("Invalid command in applyCh")
+				var op kvpb.Op
+				err := proto.Unmarshal(msg.Command, &op)
+				if err != nil {
+					fmt.Println("Failed to decode command:", err)
 					continue
 				}
+
 				switch op.Type {
 				case "Put":
 					kv.Put(op.Key, op.Value)
 				case "Del":
 					kv.Delete(op.Key)
+				default:
+					fmt.Println("Unknown Op type:", op.Type)
 				}
+
 				if msg.CommandIndex-lastSnapshottedIndex >= 5 {
-					snapshot := kv.SerializeState()
+					snapshot, _ := kv.SerializeState()
 					rf.Snapshot(msg.CommandIndex, snapshot)
 					lastSnapshottedIndex = msg.CommandIndex
 				}
