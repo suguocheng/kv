@@ -22,7 +22,7 @@ import (
 type KV struct {
 	logFile *os.File
 	writer  *bufio.Writer
-	store   map[string]string
+	store   *SkipList
 	mu      sync.RWMutex
 }
 
@@ -33,7 +33,7 @@ func NewKV(filepath string) (*KV, error) {
 	}
 
 	kv := &KV{
-		store:   make(map[string]string),
+		store:   NewSkipList(),
 		logFile: file,
 		writer:  bufio.NewWriter(file),
 	}
@@ -62,9 +62,9 @@ func (kv *KV) replayLog() error {
 			if len(parts) != 3 {
 				continue
 			}
-			kv.store[parts[1]] = parts[2]
+			kv.store.Set(parts[1], parts[2])
 		case "DEL":
-			delete(kv.store, parts[1])
+			kv.store.Delete(parts[1])
 		}
 	}
 
@@ -75,7 +75,7 @@ func (kv *KV) Put(key, value string) error {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
 
-	if _, exists := kv.store[key]; exists {
+	if _, exists := kv.store.Get(key); exists {
 		return errors.New("key already exists")
 	}
 
@@ -86,7 +86,7 @@ func (kv *KV) Put(key, value string) error {
 	}
 	kv.writer.Flush()
 
-	kv.store[key] = value
+	kv.store.Set(key, value)
 	return nil
 }
 
@@ -94,7 +94,7 @@ func (kv *KV) Get(key string) (string, error) {
 	kv.mu.RLock()
 	defer kv.mu.RUnlock()
 
-	val, ok := kv.store[key]
+	val, ok := kv.store.Get(key)
 	if !ok {
 		return "", errors.New("key does not exist")
 	}
@@ -106,7 +106,7 @@ func (kv *KV) Delete(key string) error {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
 
-	if _, exists := kv.store[key]; !exists {
+	if _, exists := kv.store.Get(key); !exists {
 		return errors.New("key does not exist")
 	}
 
@@ -117,7 +117,7 @@ func (kv *KV) Delete(key string) error {
 	}
 	kv.writer.Flush()
 
-	delete(kv.store, key)
+	kv.store.Delete(key)
 	return nil
 }
 
@@ -127,11 +127,16 @@ func (kv *KV) Close() error {
 }
 
 func (kv *KV) SerializeState() ([]byte, error) {
+	kv.mu.RLock()
+	defer kv.mu.RUnlock()
+
 	kvStore := &kvpb.KVStore{}
-	for k, v := range kv.store {
+	pairs := kv.store.Range("", "") // 获取所有键值对
+
+	for _, pair := range pairs {
 		kvStore.Pairs = append(kvStore.Pairs, &kvpb.KVPair{
-			Key:   k,
-			Value: v,
+			Key:   pair.Key,
+			Value: pair.Value,
 		})
 	}
 
