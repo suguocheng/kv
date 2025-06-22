@@ -19,14 +19,15 @@ type NodeConfig struct {
 	PeerAddrs     map[int]string
 	RaftStatePath string
 	SnapshotPath  string
-	KVLogPath     string
+	WALDir        string
+	MaxWALEntries int // 每个WAL文件最大条目数
 }
 
 func main() {
 	me := parseNodeID()
 	conf := loadNodeConfig(me)
 
-	kv := initKV(conf.KVLogPath)
+	kv := initKV(conf.WALDir, conf.MaxWALEntries)
 	defer kv.Close()
 
 	rf, applyCh := initRaft(conf, kv)
@@ -62,12 +63,13 @@ func loadNodeConfig(me int) *NodeConfig {
 		PeerAddrs:     peerAddrs,
 		RaftStatePath: fmt.Sprintf("data/node%d/raft-state.pb", me),
 		SnapshotPath:  fmt.Sprintf("data/node%d/snapshot.pb", me),
-		KVLogPath:     fmt.Sprintf("data/node%d/command.log", me),
+		WALDir:        fmt.Sprintf("data/node%d/wal", me),
+		MaxWALEntries: 5, // 每个WAL文件最多10个条目，与快照阈值保持一致
 	}
 }
 
-func initKV(path string) *kvstore.KV {
-	kv, err := kvstore.NewKV(path)
+func initKV(walDir string, maxEntries int) *kvstore.KV {
+	kv, err := kvstore.NewKV(walDir, maxEntries)
 	if err != nil {
 		panic(err)
 	}
@@ -104,10 +106,23 @@ func startApplyLoop(rf *raft.Raft, kv *kvstore.KV, applyCh chan raft.ApplyMsg) {
 					fmt.Println("Unknown Op type:", op.Type)
 				}
 
+				fmt.Printf("DEBUG: CommandIndex=%d, lastSnapshottedIndex=%d, diff=%d\n",
+					msg.CommandIndex, lastSnapshottedIndex, msg.CommandIndex-lastSnapshottedIndex)
+
+				// 修复：快照阈值与MaxWALEntries保持一致，方便删除整个WAL文件
+				// 只有当累积的条目数达到阈值时才触发快照
 				if msg.CommandIndex-lastSnapshottedIndex >= 5 {
+					fmt.Printf("DEBUG: Triggering snapshot at index %d\n", msg.CommandIndex)
 					snapshot, _ := kv.SerializeState()
 					rf.Snapshot(msg.CommandIndex, snapshot)
 					lastSnapshottedIndex = msg.CommandIndex
+
+					// 清理已快照的WAL文件
+					if err := kv.CleanupWALFiles(msg.CommandIndex); err != nil {
+						fmt.Printf("Failed to cleanup WAL files: %v\n", err)
+					} else {
+						fmt.Printf("Cleaned up WAL files up to index %d\n", msg.CommandIndex)
+					}
 				}
 			}
 		}
