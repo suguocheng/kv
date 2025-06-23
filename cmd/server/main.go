@@ -124,6 +124,21 @@ func startApplyLoop(rf *raft.Raft, kv *kvstore.KV, applyCh chan raft.ApplyMsg) {
 						fmt.Printf("Cleaned up WAL files up to index %d\n", msg.CommandIndex)
 					}
 				}
+			} else if msg.SnapshotValid {
+				// 处理快照安装
+				ok := rf.CondInstallSnapshot(msg.SnapshotTerm, msg.SnapshotIndex, msg.Snapshot)
+				if ok {
+					// 用快照恢复状态机
+					err := kv.RestoreFromSnapshot()
+					if err != nil {
+						fmt.Printf("Failed to restore state from snapshot: %v\n", err)
+					} else {
+						fmt.Printf("Restored state from snapshot at index %d\n", msg.SnapshotIndex)
+					}
+					lastSnapshottedIndex = msg.SnapshotIndex
+				} else {
+					fmt.Printf("CondInstallSnapshot rejected snapshot at index %d\n", msg.SnapshotIndex)
+				}
 			}
 		}
 	}()

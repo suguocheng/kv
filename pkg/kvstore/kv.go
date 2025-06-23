@@ -64,7 +64,7 @@ func NewKV(walDir string, maxEntriesPerFile int) (*KV, error) {
 		nextRaftIndex: 1, // 初始Raft日志索引
 	}
 	// 1. 先从快照恢复
-	_ = kv.restoreFromSnapshot()
+	_ = kv.RestoreFromSnapshot()
 	// 2. 再重放WAL
 	_ = kv.replayAllWALs()
 	// 3. 新建WAL文件，编号递增
@@ -75,7 +75,7 @@ func NewKV(walDir string, maxEntriesPerFile int) (*KV, error) {
 }
 
 // 新增：快照恢复
-func (kv *KV) restoreFromSnapshot() error {
+func (kv *KV) RestoreFromSnapshot() error {
 	data, err := os.ReadFile(kv.snapshotPath)
 	if os.IsNotExist(err) || len(data) == 0 {
 		return nil
