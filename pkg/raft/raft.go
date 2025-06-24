@@ -431,6 +431,7 @@ func Make(me int, peerAddrs map[int]string, myAddr string, applyCh chan ApplyMsg
 		ln, err := net.Listen("tcp", raftAddr)
 		if err != nil {
 			log.DPrintf("Raft %d listen error: %v", me, err)
+			return // 监听失败直接退出，避免nil指针panic
 		}
 		for {
 			conn, err := ln.Accept()
@@ -447,20 +448,28 @@ func Make(me int, peerAddrs map[int]string, myAddr string, applyCh chan ApplyMsg
 			continue
 		}
 		go func(id int, addr string) {
-			retries := 0
-			maxRetries := 5
-			for retries < maxRetries {
+			for {
 				client, err := rpc.Dial("tcp", addr)
 				if err == nil {
 					rf.mu.Lock()
 					rf.peers[id] = client
 					rf.mu.Unlock()
-					return
+					log.Printf("连接%d号节点成功", id)
+					// 进入连接保活循环
+					for {
+						pingErr := client.Call("Raft.Ping", struct{}{}, &struct{}{})
+						if pingErr != nil {
+							log.Printf("与%d号节点连接断开，重试...", id)
+							rf.mu.Lock()
+							delete(rf.peers, id)
+							rf.mu.Unlock()
+							break // 跳出内层，重新Dial
+						}
+						time.Sleep(2 * time.Second)
+					}
 				}
-				time.Sleep(time.Duration(retries*100) * time.Millisecond)
-				retries++
+				time.Sleep(1 * time.Second)
 			}
-			log.DPrintf("Raft %d failed to connect peer %d after retries", me, id)
 		}(id, addr)
 	}
 
@@ -478,4 +487,8 @@ func Make(me int, peerAddrs map[int]string, myAddr string, applyCh chan ApplyMsg
 	go rf.applier()
 
 	return rf
+}
+
+func (rf *Raft) Ping(args struct{}, reply *struct{}) error {
+	return nil
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"kv/log"
 	"kv/pkg/kvpb"
 	"kv/pkg/kvstore"
 	"kv/pkg/raft"
@@ -64,7 +65,7 @@ func loadNodeConfig(me int) *NodeConfig {
 		RaftStatePath: fmt.Sprintf("data/node%d/raft-state.pb", me),
 		SnapshotPath:  fmt.Sprintf("data/node%d/snapshot.pb", me),
 		WALDir:        fmt.Sprintf("data/node%d/wal", me),
-		MaxWALEntries: 5, // 每个WAL文件最多10个条目，与快照阈值保持一致
+		MaxWALEntries: 5, // 每个WAL文件最多100个条目，与快照阈值保持一致
 	}
 }
 
@@ -106,38 +107,33 @@ func startApplyLoop(rf *raft.Raft, kv *kvstore.KV, applyCh chan raft.ApplyMsg) {
 					fmt.Println("Unknown Op type:", op.Type)
 				}
 
-				fmt.Printf("DEBUG: CommandIndex=%d, lastSnapshottedIndex=%d, diff=%d\n",
-					msg.CommandIndex, lastSnapshottedIndex, msg.CommandIndex-lastSnapshottedIndex)
-
-				// 修复：快照阈值与MaxWALEntries保持一致，方便删除整个WAL文件
+				// 快照阈值与MaxWALEntries保持一致，方便删除整个WAL文件
 				// 只有当累积的条目数达到阈值时才触发快照
 				if msg.CommandIndex-lastSnapshottedIndex >= 5 {
-					fmt.Printf("DEBUG: Triggering snapshot at index %d\n", msg.CommandIndex)
 					snapshot, _ := kv.SerializeState()
 					rf.Snapshot(msg.CommandIndex, snapshot)
 					lastSnapshottedIndex = msg.CommandIndex
 
 					// 清理已快照的WAL文件
 					if err := kv.CleanupWALFiles(msg.CommandIndex); err != nil {
-						fmt.Printf("Failed to cleanup WAL files: %v\n", err)
+						log.DPrintf("Failed to cleanup WAL files: %v\n", err)
 					} else {
-						fmt.Printf("Cleaned up WAL files up to index %d\n", msg.CommandIndex)
+						log.DPrintf("Cleaned up WAL files up to index %d\n", msg.CommandIndex)
 					}
 				}
 			} else if msg.SnapshotValid {
 				// 处理快照安装
 				ok := rf.CondInstallSnapshot(msg.SnapshotTerm, msg.SnapshotIndex, msg.Snapshot)
 				if ok {
-					// 用快照恢复状态机
-					err := kv.RestoreFromSnapshot()
+					err := kv.RestoreFromSnapshotData(msg.Snapshot)
 					if err != nil {
-						fmt.Printf("Failed to restore state from snapshot: %v\n", err)
+						log.DPrintf("Failed to restore state from snapshot: %v\n", err)
 					} else {
-						fmt.Printf("Restored state from snapshot at index %d\n", msg.SnapshotIndex)
+						log.DPrintf("Restored state from snapshot at index %d\n", msg.SnapshotIndex)
 					}
 					lastSnapshottedIndex = msg.SnapshotIndex
 				} else {
-					fmt.Printf("CondInstallSnapshot rejected snapshot at index %d\n", msg.SnapshotIndex)
+					log.DPrintf("CondInstallSnapshot rejected snapshot at index %d\n", msg.SnapshotIndex)
 				}
 			}
 		}

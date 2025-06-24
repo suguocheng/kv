@@ -215,12 +215,21 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 }
 
 func (rf *Raft) sendAppendEntries(server int, args *AppendEntriesArgs, reply *AppendEntriesReply) bool {
+	rf.mu.RLock()
 	client := rf.peers[server]
+	rf.mu.RUnlock()
+	if client == nil {
+		return false
+	}
 	err := client.Call("Raft.AppendEntries", args, reply)
 	if err != nil {
-		log.DPrintf("[RPC] AppendEntries to %d failed: %v", server, err)
+		log.Printf("AppendEntries to %d failed: %v, 清理连接等待重连", server, err)
+		rf.mu.Lock()
+		delete(rf.peers, server)
+		rf.mu.Unlock()
+		return false
 	}
-	return err == nil
+	return true
 }
 
 func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapshotReply) error {
@@ -253,13 +262,6 @@ func (rf *Raft) InstallSnapshot(args *InstallSnapshotArgs, reply *InstallSnapsho
 		}()
 
 		rf.applyCond.Signal()
-
-		// rf.logs = []LogEntry{
-		// 	{Term: args.LastIncludedTerm, Index: args.LastIncludedIndex}, // 虚拟日志条目
-		// }
-		// rf.commitIndex = args.LastIncludedIndex
-		// rf.lastApplied = args.LastIncludedIndex
-		// rf.persist()
 
 	}
 

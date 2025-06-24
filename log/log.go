@@ -21,3 +21,7 @@ func DPrintf(format string, a ...interface{}) {
 		logger.Output(2, fmt.Sprintf(format, a...))
 	}
 }
+
+func Printf(format string, a ...interface{}) {
+	logger.Output(2, fmt.Sprintf(format, a...))
+}

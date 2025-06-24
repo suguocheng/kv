@@ -74,7 +74,7 @@ func NewKV(walDir string, maxEntriesPerFile int) (*KV, error) {
 	return kv, nil
 }
 
-// 新增：快照恢复
+// 从本地文件恢复快照
 func (kv *KV) RestoreFromSnapshot() error {
 	data, err := os.ReadFile(kv.snapshotPath)
 	if os.IsNotExist(err) || len(data) == 0 {
@@ -87,6 +87,26 @@ func (kv *KV) RestoreFromSnapshot() error {
 	for _, pair := range kvStore.Pairs {
 		kv.store.Set(pair.Key, pair.Value)
 	}
+	return nil
+}
+
+// 从快照数据恢复快照
+func (kv *KV) RestoreFromSnapshotData(snapshot []byte) error {
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+	if len(snapshot) == 0 {
+		return nil
+	}
+	var kvStore kvpb.KVStore
+	if err := proto.Unmarshal(snapshot, &kvStore); err != nil {
+		return err
+	}
+	kv.store = NewSkipList()
+	for _, pair := range kvStore.Pairs {
+		kv.store.Set(pair.Key, pair.Value)
+	}
+	// 覆盖本地快照文件
+	os.WriteFile(kv.snapshotPath, snapshot, 0644)
 	return nil
 }
 
@@ -319,21 +339,16 @@ func (kv *KV) CleanupWALFiles(snapshotIndex int) error {
 	// 更新最后快照索引
 	kv.lastSnapshotIndex = snapshotIndex
 
-	fmt.Printf("DEBUG: CleanupWALFiles - snapshotIndex=%d\n", snapshotIndex)
-
 	// 计算每个WAL文件的覆盖范围
 	var filesToDelete []string
 	var filesToKeep []*WALFile
 
 	for _, walFile := range kv.walFiles {
-		fmt.Printf("DEBUG: WAL file %s - startIndex=%d, endIndex=%d\n", filepath.Base(walFile.path), walFile.startIndex, walFile.endIndex)
 		// 只有endIndex<=snapshotIndex时才删除
 		if walFile.endIndex > 0 && walFile.endIndex <= snapshotIndex {
 			filesToDelete = append(filesToDelete, walFile.path)
-			fmt.Printf("DEBUG: Will delete WAL file %s\n", filepath.Base(walFile.path))
 		} else {
 			filesToKeep = append(filesToKeep, walFile)
-			fmt.Printf("DEBUG: Will keep WAL file %s\n", filepath.Base(walFile.path))
 		}
 	}
 
@@ -358,14 +373,12 @@ func (kv *KV) CleanupWALFiles(snapshotIndex int) error {
 			}
 		}
 		if !currentWALExists {
-			fmt.Printf("DEBUG: Current WAL file %s was deleted, setting to nil\n", filepath.Base(kv.currentWAL.path))
 			kv.currentWAL = nil
 		}
 	}
 
 	// 如果所有WAL文件都被删光了，主动新建一个WAL文件
 	if len(kv.walFiles) == 0 {
-		fmt.Printf("DEBUG: All WAL files deleted, creating new WAL file\n")
 		if err := kv.createNewWALFile(); err != nil {
 			return fmt.Errorf("failed to create new WAL file after cleanup: %v", err)
 		}
