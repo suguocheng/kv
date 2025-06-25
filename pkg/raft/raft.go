@@ -459,7 +459,7 @@ func Make(me int, peerAddrs map[int]string, myAddr string, applyCh chan ApplyMsg
 					for {
 						pingErr := client.Call("Raft.Ping", struct{}{}, &struct{}{})
 						if pingErr != nil {
-							log.Printf("与%d号节点连接断开，重试...", id)
+							log.Printf("与%d号节点连接断开,重试...", id)
 							rf.mu.Lock()
 							delete(rf.peers, id)
 							rf.mu.Unlock()
