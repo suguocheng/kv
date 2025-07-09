@@ -3,6 +3,7 @@ package kvstore
 import (
 	"bufio"
 	"fmt"
+	"kv/log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -144,7 +145,7 @@ func (wm *WALManager) replayWALFile(walPath string, store *SkipList) error {
 					now := time.Now().Unix()
 					if now-timestamp >= ttl {
 						// 已过期，跳过这个key
-						fmt.Printf("Skipping expired key during WAL replay: %s\n", parts[1])
+						log.DPrintf("Skipping expired key during WAL replay: %s\n", parts[1])
 						continue
 					}
 				}

@@ -2,10 +2,14 @@ package client
 
 import (
 	"bufio"
+	"encoding/base64"
 	"fmt"
+	"kv/pkg/kvpb"
 	"net"
 	"strings"
 	"time"
+
+	"google.golang.org/protobuf/proto"
 )
 
 type Client struct {
@@ -73,4 +77,27 @@ func (c *Client) SendCommand(cmd string) (string, error) {
 	}
 
 	return "", fmt.Errorf("no available leader found for %s", cmdType)
+}
+
+// Txn 发送事务请求，返回TxnResponse
+func (c *Client) Txn(req *kvpb.TxnRequest) (*kvpb.TxnResponse, error) {
+	data, err := proto.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+	b64 := base64.StdEncoding.EncodeToString(data)
+	cmd := "TXN " + b64
+	respStr, err := c.SendCommand(cmd)
+	if err != nil {
+		return nil, err
+	}
+	respData, err := base64.StdEncoding.DecodeString(respStr)
+	if err != nil {
+		return nil, err
+	}
+	var resp kvpb.TxnResponse
+	if err := proto.Unmarshal(respData, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }

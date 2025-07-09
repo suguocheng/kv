@@ -180,12 +180,14 @@ func (kv *KV) Put(key, value string) error {
 
 // PutWithTTL 设置键值对并指定TTL（秒）
 func (kv *KV) PutWithTTL(key, value string, ttl int64) error {
-	kv.mu.Lock()
-	defer kv.mu.Unlock()
+	// kv.mu.Lock()  // 已由外部加锁
+	// defer kv.mu.Unlock()
 
-	if _, exists := kv.store.Get(key); exists {
-		return errors.New("key already exists")
-	}
+	// 允许覆盖写，不再因key已存在报错
+	// if _, exists := kv.store.Get(key); exists {
+	// 	fmt.Println("[DEBUG] PutWithTTL key exists, return error")
+	// 	return errors.New("key already exists")
+	// }
 
 	// 记录写入时间戳，格式：PUT key value ttl timestamp
 	timestamp := time.Now().Unix()
@@ -199,8 +201,8 @@ func (kv *KV) PutWithTTL(key, value string, ttl int64) error {
 }
 
 func (kv *KV) Get(key string) (string, error) {
-	kv.mu.RLock()
-	defer kv.mu.RUnlock()
+	// kv.mu.RLock()  // 已由外部加锁
+	// defer kv.mu.RUnlock()
 
 	val, ok := kv.store.Get(key)
 	if !ok {
@@ -211,8 +213,8 @@ func (kv *KV) Get(key string) (string, error) {
 }
 
 func (kv *KV) Delete(key string) error {
-	kv.mu.Lock()
-	defer kv.mu.Unlock()
+	// kv.mu.Lock()  // 已由外部加锁
+	// defer kv.mu.Unlock()
 
 	if _, exists := kv.store.Get(key); !exists {
 		return errors.New("key does not exist")
@@ -294,4 +296,93 @@ func (kv *KV) GetWithTTL(key string) (string, int64, error) {
 	// 获取TTL信息（这里需要从store中获取，暂时返回0）
 	// TODO: 在SkipList中添加GetWithTTL方法
 	return val, 0, nil
+}
+
+// Txn 事务操作，支持条件判断和原子提交
+func (kv *KV) Txn(req *kvpb.TxnRequest) (*kvpb.TxnResponse, error) {
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+
+	succeeded := true
+	// 1. 条件判断
+	for _, cmp := range req.Compare {
+		if !kv.evalCompare(cmp) {
+			succeeded = false
+			break
+		}
+	}
+
+	var ops []*kvpb.Op
+	if succeeded {
+		ops = req.Success
+	} else {
+		ops = req.Failure
+	}
+
+	responses := make([]*kvpb.OpResponse, 0, len(ops))
+	for _, op := range ops {
+		resp := kv.applyOp(op)
+		responses = append(responses, resp)
+	}
+
+	return &kvpb.TxnResponse{
+		Succeeded: succeeded,
+		Responses: responses,
+	}, nil
+}
+
+// evalCompare 判断单个Compare条件
+func (kv *KV) evalCompare(cmp *kvpb.Compare) bool {
+	val, ok := kv.store.Get(cmp.Key)
+	switch cmp.Target {
+	case kvpb.CompareTarget_EXISTS:
+		if cmp.Result == kvpb.CompareResult_EQUAL {
+			return ok
+		} else if cmp.Result == kvpb.CompareResult_NOT_EQUAL {
+			return !ok
+		}
+		return false
+	case kvpb.CompareTarget_VALUE:
+		if !ok {
+			// key不存在时，=为false，!=为true
+			if cmp.Result == kvpb.CompareResult_NOT_EQUAL {
+				return true
+			}
+			return false
+		}
+		switch cmp.Result {
+		case kvpb.CompareResult_EQUAL:
+			return val == cmp.Value
+		case kvpb.CompareResult_NOT_EQUAL:
+			return val != cmp.Value
+		}
+		return false
+	// 其他类型可扩展
+	default:
+		return false
+	}
+}
+
+// applyOp 执行单个Op操作，返回响应
+func (kv *KV) applyOp(op *kvpb.Op) *kvpb.OpResponse {
+	switch op.Type {
+	case "PUT":
+		err := kv.PutWithTTL(op.Key, op.Value, op.Ttl)
+		return &kvpb.OpResponse{Key: op.Key, Value: op.Value, Error: errStr(err)}
+	case "DEL":
+		err := kv.Delete(op.Key)
+		return &kvpb.OpResponse{Key: op.Key, Error: errStr(err)}
+	case "GET":
+		val, err := kv.Get(op.Key)
+		return &kvpb.OpResponse{Key: op.Key, Value: val, Error: errStr(err)}
+	default:
+		return &kvpb.OpResponse{Key: op.Key, Error: "unknown op type"}
+	}
+}
+
+func errStr(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }

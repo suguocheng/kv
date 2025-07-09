@@ -2,6 +2,7 @@ package server
 
 import (
 	"bufio"
+	"encoding/base64"
 	"kv/pkg/kvpb"
 	"kv/pkg/kvstore"
 	"kv/pkg/raft"
@@ -101,7 +102,33 @@ func HandleConnection(conn net.Conn, kv *kvstore.KV, rf *raft.Raft) {
 			}
 
 		default:
-			conn.Write([]byte("ERR Unknown command\n"))
+			if cmd == "TXN" && len(parts) == 2 {
+				// parts[1]为base64编码的TxnRequest
+				data, err := base64.StdEncoding.DecodeString(parts[1])
+				if err != nil {
+					conn.Write([]byte("ERR txn base64 decode failed\n"))
+					continue
+				}
+				var req kvpb.TxnRequest
+				if err := proto.Unmarshal(data, &req); err != nil {
+					conn.Write([]byte("ERR txn proto unmarshal failed\n"))
+					continue
+				}
+				resp, err := kv.Txn(&req)
+				if err != nil {
+					conn.Write([]byte("ERR txn failed\n"))
+					continue
+				}
+				respData, err := proto.Marshal(resp)
+				if err != nil {
+					conn.Write([]byte("ERR txn marshal failed\n"))
+					continue
+				}
+				b64 := base64.StdEncoding.EncodeToString(respData)
+				conn.Write([]byte(b64 + "\n"))
+			} else {
+				conn.Write([]byte("ERR Unknown command\n"))
+			}
 		}
 	}
 }

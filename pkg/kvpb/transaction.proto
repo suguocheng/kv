@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package kvpb;
+
+option go_package = "kv/pkg/kvpb";
+
+import "pkg/kvpb/op.proto";
+
+// 比较操作类型
+enum CompareResult {
+  EQUAL = 0;      // 等于
+  GREATER = 1;    // 大于
+  LESS = 2;       // 小于
+  NOT_EQUAL = 3;  // 不等于
+  GREATER_EQUAL = 4; // 大于等于
+  LESS_EQUAL = 5;    // 小于等于
+}
+
+// 比较目标类型
+enum CompareTarget {
+  VERSION = 0;    // 版本号
+  CREATE = 1;     // 创建版本
+  MOD = 2;        // 修改版本
+  VALUE = 3;      // 值
+  EXISTS = 4;     // 是否存在
+}
+
+// 单个比较条件
+message Compare {
+  string key = 1;           // 要比较的键
+  CompareTarget target = 2; // 比较目标
+  CompareResult result = 3; // 比较结果
+  string value = 4;         // 比较值（用于VALUE比较）
+  int64 version = 5;        // 版本号（用于版本比较）
+}
+
+// 事务操作
+message TxnRequest {
+  repeated Compare compare = 1;  // 比较条件
+  repeated Op success = 2;       // 成功时执行的操作
+  repeated Op failure = 3;       // 失败时执行的操作
+}
+
+// 事务响应
+message TxnResponse {
+  bool succeeded = 1;        // 事务是否成功
+  repeated OpResponse responses = 2; // 操作响应
+}
+
+// 操作响应
+message OpResponse {
+  string key = 1;
+  string value = 2;
+  int64 version = 3;
+  bool exists = 4;
+  string error = 5;
+} 
