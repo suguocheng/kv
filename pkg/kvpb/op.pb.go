@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v3.21.12
-// source: op.proto
+// source: pkg/kvpb/op.proto
 
 package kvpb
 
@@ -26,13 +26,14 @@ type Op struct {
 	Type          string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
 	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
 	Value         string                 `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
+	Ttl           int64                  `protobuf:"varint,4,opt,name=ttl,proto3" json:"ttl,omitempty"` // TTL in seconds, 0 means no expiration
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Op) Reset() {
 	*x = Op{}
-	mi := &file_op_proto_msgTypes[0]
+	mi := &file_pkg_kvpb_op_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -44,7 +45,7 @@ func (x *Op) String() string {
 func (*Op) ProtoMessage() {}
 
 func (x *Op) ProtoReflect() protoreflect.Message {
-	mi := &file_op_proto_msgTypes[0]
+	mi := &file_pkg_kvpb_op_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -57,7 +58,7 @@ func (x *Op) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Op.ProtoReflect.Descriptor instead.
 func (*Op) Descriptor() ([]byte, []int) {
-	return file_op_proto_rawDescGZIP(), []int{0}
+	return file_pkg_kvpb_op_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Op) GetType() string {
@@ -81,33 +82,41 @@ func (x *Op) GetValue() string {
 	return ""
 }
 
-var File_op_proto protoreflect.FileDescriptor
+func (x *Op) GetTtl() int64 {
+	if x != nil {
+		return x.Ttl
+	}
+	return 0
+}
 
-const file_op_proto_rawDesc = "" +
+var File_pkg_kvpb_op_proto protoreflect.FileDescriptor
+
+const file_pkg_kvpb_op_proto_rawDesc = "" +
 	"\n" +
-	"\bop.proto\x12\x04kvpb\"@\n" +
+	"\x11pkg/kvpb/op.proto\x12\x04kvpb\"R\n" +
 	"\x02Op\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x12\x10\n" +
 	"\x03key\x18\x02 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x03 \x01(\tR\x05valueB\rZ\vkv/pkg/kvpbb\x06proto3"
+	"\x05value\x18\x03 \x01(\tR\x05value\x12\x10\n" +
+	"\x03ttl\x18\x04 \x01(\x03R\x03ttlB\rZ\vkv/pkg/kvpbb\x06proto3"
 
 var (
-	file_op_proto_rawDescOnce sync.Once
-	file_op_proto_rawDescData []byte
+	file_pkg_kvpb_op_proto_rawDescOnce sync.Once
+	file_pkg_kvpb_op_proto_rawDescData []byte
 )
 
-func file_op_proto_rawDescGZIP() []byte {
-	file_op_proto_rawDescOnce.Do(func() {
-		file_op_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_op_proto_rawDesc), len(file_op_proto_rawDesc)))
+func file_pkg_kvpb_op_proto_rawDescGZIP() []byte {
+	file_pkg_kvpb_op_proto_rawDescOnce.Do(func() {
+		file_pkg_kvpb_op_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pkg_kvpb_op_proto_rawDesc), len(file_pkg_kvpb_op_proto_rawDesc)))
 	})
-	return file_op_proto_rawDescData
+	return file_pkg_kvpb_op_proto_rawDescData
 }
 
-var file_op_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_op_proto_goTypes = []any{
+var file_pkg_kvpb_op_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_pkg_kvpb_op_proto_goTypes = []any{
 	(*Op)(nil), // 0: kvpb.Op
 }
-var file_op_proto_depIdxs = []int32{
+var file_pkg_kvpb_op_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
 	0, // [0:0] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -115,26 +124,26 @@ var file_op_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_op_proto_init() }
-func file_op_proto_init() {
-	if File_op_proto != nil {
+func init() { file_pkg_kvpb_op_proto_init() }
+func file_pkg_kvpb_op_proto_init() {
+	if File_pkg_kvpb_op_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_op_proto_rawDesc), len(file_op_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_kvpb_op_proto_rawDesc), len(file_pkg_kvpb_op_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_op_proto_goTypes,
-		DependencyIndexes: file_op_proto_depIdxs,
-		MessageInfos:      file_op_proto_msgTypes,
+		GoTypes:           file_pkg_kvpb_op_proto_goTypes,
+		DependencyIndexes: file_pkg_kvpb_op_proto_depIdxs,
+		MessageInfos:      file_pkg_kvpb_op_proto_msgTypes,
 	}.Build()
-	File_op_proto = out.File
-	file_op_proto_goTypes = nil
-	file_op_proto_depIdxs = nil
+	File_pkg_kvpb_op_proto = out.File
+	file_pkg_kvpb_op_proto_goTypes = nil
+	file_pkg_kvpb_op_proto_depIdxs = nil
 }

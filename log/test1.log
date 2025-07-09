@@ -1,3 +1,5 @@
+Skipping expired key during WAL replay: 1
+Skipping expired key during WAL replay: 1
 Listening on localhost:9001
-2025/06/25 15:11:45 raft.go:457: 连接0号节点成功
-2025/06/25 15:11:46 raft.go:457: 连接2号节点成功
+2025/07/09 13:29:37 raft.go:457: 连接0号节点成功
+2025/07/09 13:29:38 raft.go:457: 连接2号节点成功

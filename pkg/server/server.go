@@ -6,6 +6,7 @@ import (
 	"kv/pkg/kvstore"
 	"kv/pkg/raft"
 	"net"
+	"strconv"
 	"strings"
 
 	"google.golang.org/protobuf/proto"
@@ -45,7 +46,30 @@ func HandleConnection(conn net.Conn, kv *kvstore.KV, rf *raft.Raft) {
 				conn.Write([]byte("ERR Usage: PUT key value\n"))
 				continue
 			}
-			op := &kvpb.Op{Type: "Put", Key: parts[1], Value: parts[2]}
+			op := &kvpb.Op{Type: "Put", Key: parts[1], Value: parts[2], Ttl: 0}
+			data, err := proto.Marshal(op)
+			if err != nil {
+				conn.Write([]byte("ERR marshal failed\n"))
+				continue
+			}
+			_, _, isLeader := rf.Start(data)
+			if isLeader {
+				conn.Write([]byte("OK\n"))
+			} else {
+				conn.Write([]byte("Not_Leader\n"))
+			}
+
+		case "PUTTTL":
+			if len(parts) != 4 {
+				conn.Write([]byte("ERR Usage: PUTTTL key value ttl\n"))
+				continue
+			}
+			ttl, err := strconv.ParseInt(parts[3], 10, 64)
+			if err != nil || ttl < 0 {
+				conn.Write([]byte("ERR Invalid TTL (must be non-negative integer)\n"))
+				continue
+			}
+			op := &kvpb.Op{Type: "PutTTL", Key: parts[1], Value: parts[2], Ttl: ttl}
 			data, err := proto.Marshal(op)
 			if err != nil {
 				conn.Write([]byte("ERR marshal failed\n"))

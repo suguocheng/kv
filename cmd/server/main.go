@@ -65,7 +65,7 @@ func loadNodeConfig(me int) *NodeConfig {
 		RaftStatePath: fmt.Sprintf("data/node%d/raft-state.pb", me),
 		SnapshotPath:  fmt.Sprintf("data/node%d/snapshot.pb", me),
 		WALDir:        fmt.Sprintf("data/node%d/wal", me),
-		MaxWALEntries: 5, // 每个WAL文件最多100个条目，与快照阈值保持一致
+		MaxWALEntries: 100, // 每个WAL文件最多100个条目，与快照阈值保持一致
 	}
 }
 
@@ -101,6 +101,8 @@ func startApplyLoop(rf *raft.Raft, kv *kvstore.KV, applyCh chan raft.ApplyMsg) {
 				switch op.Type {
 				case "Put":
 					kv.Put(op.Key, op.Value)
+				case "PutTTL":
+					kv.PutWithTTL(op.Key, op.Value, op.Ttl)
 				case "Del":
 					kv.Delete(op.Key)
 				default:
@@ -109,7 +111,7 @@ func startApplyLoop(rf *raft.Raft, kv *kvstore.KV, applyCh chan raft.ApplyMsg) {
 
 				// 快照阈值与MaxWALEntries保持一致，方便删除整个WAL文件
 				// 只有当累积的条目数达到阈值时才触发快照
-				if msg.CommandIndex-lastSnapshottedIndex >= 5 {
+				if msg.CommandIndex-lastSnapshottedIndex >= 100 {
 					snapshot, _ := kv.SerializeState()
 					rf.Snapshot(msg.CommandIndex, snapshot)
 					lastSnapshottedIndex = msg.CommandIndex

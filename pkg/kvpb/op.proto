@@ -8,4 +8,5 @@ message Op {
   string type = 1;
   string key = 2;
   string value = 3;
+  int64 ttl = 4;  // TTL in seconds, 0 means no expiration
 }

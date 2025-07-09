@@ -7,6 +7,7 @@ option go_package = "kv/pkg/kvpb";
 message KVPair {
   string key = 1;
   string value = 2;
+  int64 ttl = 3;  // TTL in seconds, 0 means no expiration
 }
 
 message KVStore {

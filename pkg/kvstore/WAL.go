@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // WALFile 表示一个WAL文件
@@ -120,17 +121,46 @@ func (wm *WALManager) replayWALFile(walPath string, store *SkipList) error {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		parts := strings.SplitN(line, " ", 3)
+		parts := strings.SplitN(line, " ", 5) // 支持最多5个字段：PUT key value ttl timestamp
 		if len(parts) < 2 {
 			continue
 		}
 
 		switch parts[0] {
 		case "PUT":
-			if len(parts) != 3 {
-				continue
+			if len(parts) == 5 {
+				// 新格式：PUT key value ttl timestamp
+				ttl, err := strconv.ParseInt(parts[3], 10, 64)
+				if err != nil {
+					ttl = 0
+				}
+				timestamp, err := strconv.ParseInt(parts[4], 10, 64)
+				if err != nil {
+					timestamp = time.Now().Unix()
+				}
+
+				// 检查是否过期
+				if ttl > 0 {
+					now := time.Now().Unix()
+					if now-timestamp >= ttl {
+						// 已过期，跳过这个key
+						fmt.Printf("Skipping expired key during WAL replay: %s\n", parts[1])
+						continue
+					}
+				}
+
+				store.Set(parts[1], parts[2], ttl)
+			} else if len(parts) == 4 {
+				// 兼容格式：PUT key value ttl（无时间戳）
+				ttl, err := strconv.ParseInt(parts[3], 10, 64)
+				if err != nil {
+					ttl = 0
+				}
+				store.Set(parts[1], parts[2], ttl)
+			} else if len(parts) == 3 {
+				// 兼容老格式：PUT key value
+				store.Set(parts[1], parts[2], 0)
 			}
-			store.Set(parts[1], parts[2])
 		case "DEL":
 			store.Delete(parts[1])
 		}
