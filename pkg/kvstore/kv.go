@@ -1,11 +1,14 @@
 package kvstore
 
 import (
-	"errors"
+	"bufio"
 	"fmt"
 	"kv/pkg/kvpb"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -21,7 +24,7 @@ import (
 
 type KV struct {
 	walManager        *WALManager
-	store             *SkipList
+	store             *MVCCSkipList // 改为MVCC跳表
 	mu                sync.RWMutex
 	snapshotPath      string // 快照文件路径
 	lastSnapshotIndex int    // 最后快照的索引
@@ -41,7 +44,7 @@ func NewKV(walDir string, maxEntriesPerFile int) (*KV, error) {
 
 	kv := &KV{
 		walManager:   walManager,
-		store:        NewSkipList(),
+		store:        NewMVCCSkipList(), // 使用MVCC跳表
 		snapshotPath: snapshotPath,
 		stopCleanup:  make(chan struct{}),
 	}
@@ -49,11 +52,9 @@ func NewKV(walDir string, maxEntriesPerFile int) (*KV, error) {
 	// 1. 先从快照恢复
 	kv.RestoreFromSnapshot()
 	// 2. 再重放WAL
-	if err := kv.walManager.ReplayAllWALs(kv.store); err != nil {
+	if err := kv.replayWALs(); err != nil {
 		return nil, err
 	}
-	// ReplayAllWALs方法现在会智能地处理现有WAL文件
-	// 如果最新WAL文件还有空间就继续使用，否则创建新文件
 
 	// 启动定期清理过期键的goroutine
 	kv.startCleanupRoutine()
@@ -118,7 +119,7 @@ func (kv *KV) RestoreFromSnapshot() error {
 			}
 		}
 
-		kv.store.Set(pair.Key, pair.Value, ttl)
+		kv.store.Put(pair.Key, pair.Value, ttl)
 		restored++
 	}
 
@@ -140,7 +141,7 @@ func (kv *KV) RestoreFromSnapshotData(snapshot []byte) error {
 	if err := proto.Unmarshal(snapshot, &kvStore); err != nil {
 		return err
 	}
-	kv.store = NewSkipList()
+	kv.store = NewMVCCSkipList()
 
 	restored := 0
 	skipped := 0
@@ -161,7 +162,7 @@ func (kv *KV) RestoreFromSnapshotData(snapshot []byte) error {
 			}
 		}
 
-		kv.store.Set(pair.Key, pair.Value, ttl)
+		kv.store.Put(pair.Key, pair.Value, ttl)
 		restored++
 	}
 
@@ -180,15 +181,6 @@ func (kv *KV) Put(key, value string) error {
 
 // PutWithTTL 设置键值对并指定TTL（秒）
 func (kv *KV) PutWithTTL(key, value string, ttl int64) error {
-	// kv.mu.Lock()  // 已由外部加锁
-	// defer kv.mu.Unlock()
-
-	// 允许覆盖写，不再因key已存在报错
-	// if _, exists := kv.store.Get(key); exists {
-	// 	fmt.Println("[DEBUG] PutWithTTL key exists, return error")
-	// 	return errors.New("key already exists")
-	// }
-
 	// 记录写入时间戳，格式：PUT key value ttl timestamp
 	timestamp := time.Now().Unix()
 	logEntry := fmt.Sprintf("PUT %s %s %d %d", key, value, ttl, timestamp)
@@ -196,37 +188,28 @@ func (kv *KV) PutWithTTL(key, value string, ttl int64) error {
 		return err
 	}
 
-	kv.store.Set(key, value, ttl)
-	return nil
+	_, err := kv.store.Put(key, value, ttl)
+	return err
 }
 
 func (kv *KV) Get(key string) (string, error) {
-	// kv.mu.RLock()  // 已由外部加锁
-	// defer kv.mu.RUnlock()
-
-	val, ok := kv.store.Get(key)
-	if !ok {
-		return "", errors.New("key does not exist or has expired")
+	versionedKV, err := kv.store.Get(key, 0)
+	if err != nil {
+		return "", err
 	}
-
-	return val, nil
+	return versionedKV.Value, nil
 }
 
 func (kv *KV) Delete(key string) error {
-	// kv.mu.Lock()  // 已由外部加锁
-	// defer kv.mu.Unlock()
-
-	if _, exists := kv.store.Get(key); !exists {
-		return errors.New("key does not exist")
-	}
-
-	logEntry := fmt.Sprintf("DEL %s", key)
+	// 记录删除时间戳，格式：DELETE key timestamp
+	timestamp := time.Now().Unix()
+	logEntry := fmt.Sprintf("DELETE %s %d", key, timestamp)
 	if err := kv.walManager.WriteLogEntry(logEntry); err != nil {
 		return err
 	}
 
-	kv.store.Delete(key)
-	return nil
+	_, err := kv.store.Delete(key)
+	return err
 }
 
 func (kv *KV) Close() error {
@@ -285,17 +268,88 @@ func (kv *KV) GetWALStats() map[string]interface{} {
 
 // GetWithTTL 获取键值对及其TTL信息
 func (kv *KV) GetWithTTL(key string) (string, int64, error) {
-	kv.mu.RLock()
-	defer kv.mu.RUnlock()
+	versionedKV, err := kv.store.Get(key, 0)
+	if err != nil {
+		return "", 0, err
+	}
+	return versionedKV.Value, versionedKV.TTL, nil
+}
 
-	val, ok := kv.store.Get(key)
-	if !ok {
-		return "", 0, errors.New("key does not exist or has expired")
+// 新增MVCC相关方法
+func (kv *KV) GetWithRevision(key string, revision int64) (string, int64, error) {
+	versionedKV, err := kv.store.Get(key, revision)
+	if err != nil {
+		return "", 0, err
+	}
+	return versionedKV.Value, versionedKV.ModRev, nil
+}
+
+func (kv *KV) GetHistory(key string, limit int64) ([]*VersionedKV, error) {
+	return kv.store.GetHistory(key, limit)
+}
+
+func (kv *KV) Range(start, end string, revision int64, limit int64) ([]*VersionedKV, int64, error) {
+	return kv.store.Range(start, end, revision, limit)
+}
+
+func (kv *KV) Compact(revision int64) (int64, error) {
+	return kv.store.Compact(revision)
+}
+
+// replayWALs 重放WAL文件到MVCC存储
+func (kv *KV) replayWALs() error {
+	files, err := os.ReadDir(kv.walManager.walDir)
+	if err != nil {
+		return fmt.Errorf("failed to read WAL directory: %v", err)
 	}
 
-	// 获取TTL信息（这里需要从store中获取，暂时返回0）
-	// TODO: 在SkipList中添加GetWithTTL方法
-	return val, 0, nil
+	var walFiles []string
+	for _, file := range files {
+		if !file.IsDir() && strings.HasPrefix(file.Name(), "wal_") && strings.HasSuffix(file.Name(), ".log") {
+			walFiles = append(walFiles, filepath.Join(kv.walManager.walDir, file.Name()))
+		}
+	}
+
+	sort.Strings(walFiles)
+	for _, walPath := range walFiles {
+		if err := kv.replayWALFile(walPath); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// replayWALFile 重放单个WAL文件
+func (kv *KV) replayWALFile(walPath string) error {
+	file, err := os.OpenFile(walPath, os.O_RDONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		parts := strings.SplitN(line, " ", 5)
+		if len(parts) < 2 {
+			continue
+		}
+
+		switch parts[0] {
+		case "PUT":
+			if len(parts) >= 4 {
+				ttl, _ := strconv.ParseInt(parts[3], 10, 64)
+				kv.store.Put(parts[1], parts[2], ttl)
+			} else if len(parts) == 3 {
+				kv.store.Put(parts[1], parts[2], 0)
+			}
+		case "DELETE":
+			kv.store.Delete(parts[1])
+		}
+	}
+
+	return scanner.Err()
 }
 
 // Txn 事务操作，支持条件判断和原子提交
@@ -331,58 +385,143 @@ func (kv *KV) Txn(req *kvpb.TxnRequest) (*kvpb.TxnResponse, error) {
 	}, nil
 }
 
-// evalCompare 判断单个Compare条件
+// evalCompare 评估比较条件
 func (kv *KV) evalCompare(cmp *kvpb.Compare) bool {
-	val, ok := kv.store.Get(cmp.Key)
+	versionedKV, err := kv.store.Get(cmp.Key, 0)
+	if err != nil {
+		// 键不存在
+		if cmp.Target == kvpb.CompareTarget_EXISTS {
+			return cmp.Result == kvpb.CompareResult_NOT_EQUAL
+		}
+		return false
+	}
+
 	switch cmp.Target {
-	case kvpb.CompareTarget_EXISTS:
-		if cmp.Result == kvpb.CompareResult_EQUAL {
-			return ok
-		} else if cmp.Result == kvpb.CompareResult_NOT_EQUAL {
-			return !ok
-		}
-		return false
+	case kvpb.CompareTarget_VERSION:
+		return kv.compareInt64(versionedKV.Version, cmp.Version, cmp.Result)
+	case kvpb.CompareTarget_CREATE:
+		return kv.compareInt64(versionedKV.CreatedRev, cmp.Version, cmp.Result)
+	case kvpb.CompareTarget_MOD:
+		return kv.compareInt64(versionedKV.ModRev, cmp.Version, cmp.Result)
 	case kvpb.CompareTarget_VALUE:
-		if !ok {
-			// key不存在时，=为false，!=为true
-			if cmp.Result == kvpb.CompareResult_NOT_EQUAL {
-				return true
-			}
-			return false
-		}
-		switch cmp.Result {
-		case kvpb.CompareResult_EQUAL:
-			return val == cmp.Value
-		case kvpb.CompareResult_NOT_EQUAL:
-			return val != cmp.Value
-		}
-		return false
-	// 其他类型可扩展
+		return kv.compareString(versionedKV.Value, cmp.Value, cmp.Result)
+	case kvpb.CompareTarget_EXISTS:
+		return cmp.Result == kvpb.CompareResult_EQUAL
 	default:
 		return false
 	}
 }
 
-// applyOp 执行单个Op操作，返回响应
+// compareInt64 比较整数
+func (kv *KV) compareInt64(a, b int64, result kvpb.CompareResult) bool {
+	switch result {
+	case kvpb.CompareResult_EQUAL:
+		return a == b
+	case kvpb.CompareResult_GREATER:
+		return a > b
+	case kvpb.CompareResult_LESS:
+		return a < b
+	case kvpb.CompareResult_NOT_EQUAL:
+		return a != b
+	case kvpb.CompareResult_GREATER_EQUAL:
+		return a >= b
+	case kvpb.CompareResult_LESS_EQUAL:
+		return a <= b
+	default:
+		return false
+	}
+}
+
+// compareString 比较字符串
+func (kv *KV) compareString(a, b string, result kvpb.CompareResult) bool {
+	switch result {
+	case kvpb.CompareResult_EQUAL:
+		return a == b
+	case kvpb.CompareResult_GREATER:
+		return a > b
+	case kvpb.CompareResult_LESS:
+		return a < b
+	case kvpb.CompareResult_NOT_EQUAL:
+		return a != b
+	case kvpb.CompareResult_GREATER_EQUAL:
+		return a >= b
+	case kvpb.CompareResult_LESS_EQUAL:
+		return a <= b
+	default:
+		return false
+	}
+}
+
+// applyOp 应用操作
 func (kv *KV) applyOp(op *kvpb.Op) *kvpb.OpResponse {
 	switch op.Type {
 	case "PUT":
-		err := kv.PutWithTTL(op.Key, op.Value, op.Ttl)
-		return &kvpb.OpResponse{Key: op.Key, Value: op.Value, Error: errStr(err)}
-	case "DEL":
-		err := kv.Delete(op.Key)
-		return &kvpb.OpResponse{Key: op.Key, Error: errStr(err)}
+		// 写入WAL
+		logEntry := formatOpToWAL(op)
+		if err := kv.walManager.WriteLogEntry(logEntry); err != nil {
+			return &kvpb.OpResponse{Key: op.Key, Error: "WAL写入失败: " + err.Error()}
+		}
+		revision, err := kv.store.Put(op.Key, op.Value, op.Ttl)
+		if err != nil {
+			return &kvpb.OpResponse{Error: err.Error()}
+		}
+		return &kvpb.OpResponse{Key: op.Key, Version: revision}
+
 	case "GET":
-		val, err := kv.Get(op.Key)
-		return &kvpb.OpResponse{Key: op.Key, Value: val, Error: errStr(err)}
+		versionedKV, err := kv.store.Get(op.Key, 0)
+		if err != nil {
+			return &kvpb.OpResponse{Key: op.Key, Error: err.Error()}
+		}
+		return &kvpb.OpResponse{
+			Key:     op.Key,
+			Value:   versionedKV.Value,
+			Version: versionedKV.ModRev,
+			Exists:  true,
+		}
+
+	case "DELETE":
+		// 写入WAL
+		logEntry := formatOpToWAL(op)
+		if err := kv.walManager.WriteLogEntry(logEntry); err != nil {
+			return &kvpb.OpResponse{Key: op.Key, Error: "WAL写入失败: " + err.Error()}
+		}
+		revision, err := kv.store.Delete(op.Key)
+		if err != nil {
+			return &kvpb.OpResponse{Key: op.Key, Error: err.Error()}
+		}
+		return &kvpb.OpResponse{Key: op.Key, Version: revision}
+
 	default:
-		return &kvpb.OpResponse{Key: op.Key, Error: "unknown op type"}
+		return &kvpb.OpResponse{Error: "unknown operation type"}
 	}
 }
 
-func errStr(err error) string {
-	if err == nil {
-		return ""
+// formatOpToWAL 格式化操作为WAL日志字符串
+func formatOpToWAL(op *kvpb.Op) string {
+	switch op.Type {
+	case "PUT":
+		// 兼容PUT/PUTTTL
+		timestamp := time.Now().Unix()
+		return fmt.Sprintf("PUT %s %s %d %d", op.Key, op.Value, op.Ttl, timestamp)
+	case "DELETE":
+		return fmt.Sprintf("DEL %s", op.Key)
+	default:
+		return "" // GET等不写入WAL
 	}
-	return err.Error()
+}
+
+// GetStats 获取统计信息
+func (kv *KV) GetStats() map[string]interface{} {
+	kv.mu.RLock()
+	defer kv.mu.RUnlock()
+
+	stats := kv.store.GetStats()
+	walStats := kv.walManager.GetWALStats()
+
+	// 合并统计信息
+	for k, v := range walStats {
+		stats[k] = v
+	}
+
+	return stats
 }

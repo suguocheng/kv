@@ -1,6 +1,4 @@
-Skipping expired key during WAL replay: 1
-Skipping expired key during WAL replay: 1
 Listening on localhost:9001
-2025/07/09 15:10:50 raft.go:457: 连接0号节点成功
-2025/07/09 15:10:51 raft.go:457: 连接2号节点成功
-2025/07/09 15:16:08 rpc.go:226: AppendEntries to 2 failed: connection is shut down, 清理连接等待重连
+2025/07/10 15:59:57 raft.go:457: 连接0号节点成功
+2025/07/10 15:59:58 raft.go:457: 连接2号节点成功
+Cleaned up 1 expired keys

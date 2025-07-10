@@ -105,6 +105,17 @@ func startApplyLoop(rf *raft.Raft, kv *kvstore.KV, applyCh chan raft.ApplyMsg) {
 					kv.PutWithTTL(op.Key, op.Value, op.Ttl)
 				case "Del":
 					kv.Delete(op.Key)
+				case "Compact":
+					// 从value字段解析版本号
+					revision, err := strconv.ParseInt(op.Value, 10, 64)
+					if err != nil {
+						fmt.Printf("Failed to parse compact revision: %v\n", err)
+						continue
+					}
+					_, err = kv.Compact(revision)
+					if err != nil {
+						fmt.Printf("Failed to compact: %v\n", err)
+					}
 				default:
 					fmt.Println("Unknown Op type:", op.Type)
 				}
