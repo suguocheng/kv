@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"kv/pkg/kvpb"
+	"kv/pkg/watch"
 	"os"
 	"path/filepath"
 	"sort"
@@ -30,6 +31,7 @@ type KV struct {
 	lastSnapshotIndex int    // 最后快照的索引
 	cleanupTicker     *time.Ticker
 	stopCleanup       chan struct{}
+	watcher           *watch.KVWatcher // 添加Watch功能
 }
 
 func NewKV(walDir string, maxEntriesPerFile int) (*KV, error) {
@@ -47,6 +49,7 @@ func NewKV(walDir string, maxEntriesPerFile int) (*KV, error) {
 		store:        NewMVCCSkipList(), // 使用MVCC跳表
 		snapshotPath: snapshotPath,
 		stopCleanup:  make(chan struct{}),
+		watcher:      watch.NewKVWatcher(), // 初始化Watch功能
 	}
 
 	// 1. 先从快照恢复
@@ -82,9 +85,18 @@ func (kv *KV) cleanupExpiredKeys() {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
 
+	// 获取过期的键值对
+	expiredKeys := kv.store.GetExpiredKeys()
+
+	// 清理过期键
 	cleaned := kv.store.CleanupExpired()
 	if cleaned > 0 {
 		fmt.Printf("Cleaned up %d expired keys\n", cleaned)
+
+		// 通知Watch监听器过期事件
+		for _, key := range expiredKeys {
+			kv.watcher.NotifyExpire(key, 0) // 过期事件使用0作为revision
+		}
 	}
 }
 
@@ -188,8 +200,14 @@ func (kv *KV) PutWithTTL(key, value string, ttl int64) error {
 		return err
 	}
 
-	_, err := kv.store.Put(key, value, ttl)
-	return err
+	revision, err := kv.store.Put(key, value, ttl)
+	if err != nil {
+		return err
+	}
+
+	// 通知Watch监听器
+	kv.watcher.NotifyPut(key, value, revision, ttl)
+	return nil
 }
 
 func (kv *KV) Get(key string) (string, error) {
@@ -208,8 +226,14 @@ func (kv *KV) Delete(key string) error {
 		return err
 	}
 
-	_, err := kv.store.Delete(key)
-	return err
+	revision, err := kv.store.Delete(key)
+	if err != nil {
+		return err
+	}
+
+	// 通知Watch监听器
+	kv.watcher.NotifyDelete(key, revision)
+	return nil
 }
 
 func (kv *KV) Close() error {
@@ -524,4 +548,51 @@ func (kv *KV) GetStats() map[string]interface{} {
 	}
 
 	return stats
+}
+
+// Watch相关方法
+
+// WatchKey 监听指定键的变化
+func (kv *KV) WatchKey(key string) (*watch.Watcher, error) {
+	return kv.watcher.WatchKey(key)
+}
+
+// WatchPrefix 监听指定前缀的所有键的变化
+func (kv *KV) WatchPrefix(prefix string) (*watch.Watcher, error) {
+	return kv.watcher.WatchPrefix(prefix)
+}
+
+// WatchKeyWithID 使用指定ID监听键的变化
+func (kv *KV) WatchKeyWithID(id, key string) (*watch.Watcher, error) {
+	return kv.watcher.WatchKeyWithID(id, key)
+}
+
+// WatchPrefixWithID 使用指定ID监听前缀的变化
+func (kv *KV) WatchPrefixWithID(id, prefix string) (*watch.Watcher, error) {
+	return kv.watcher.WatchPrefixWithID(id, prefix)
+}
+
+// Unwatch 取消监听
+func (kv *KV) Unwatch(id string) error {
+	return kv.watcher.Unwatch(id)
+}
+
+// GetWatcher 获取指定ID的监听器
+func (kv *KV) GetWatcher(id string) (*watch.Watcher, bool) {
+	return kv.watcher.GetWatcher(id)
+}
+
+// ListWatchers 列出所有监听器
+func (kv *KV) ListWatchers() []*watch.Watcher {
+	return kv.watcher.ListWatchers()
+}
+
+// GetWatchStats 获取监听器统计信息
+func (kv *KV) GetWatchStats() map[string]interface{} {
+	return kv.watcher.GetStats()
+}
+
+// CleanupWatchers 清理已关闭的监听器
+func (kv *KV) CleanupWatchers() {
+	kv.watcher.Cleanup()
 }

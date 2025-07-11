@@ -6,6 +6,11 @@ import (
 	"time"
 )
 
+const (
+	maxLevel    = 16
+	probability = 0.25
+)
+
 // VersionedKV 表示带版本的键值对
 // 用于MVCC跳表的多版本管理
 // 字段含义参考etcd等实现
@@ -440,35 +445,40 @@ func (sl *MVCCSkipList) GetStats() map[string]interface{} {
 
 // CleanupExpired 清理过期的键值对
 func (sl *MVCCSkipList) CleanupExpired() int {
+	expiredKeys := sl.GetExpiredKeys()
+
 	sl.mu.Lock()
 	defer sl.mu.Unlock()
 
-	cleaned := 0
+	// 删除过期节点
+	for _, key := range expiredKeys {
+		sl.deleteNode(key)
+	}
+
+	return len(expiredKeys)
+}
+
+// GetExpiredKeys 获取过期的键列表
+func (sl *MVCCSkipList) GetExpiredKeys() []string {
+	sl.mu.RLock()
+	defer sl.mu.RUnlock()
+
+	var expiredKeys []string
 	now := time.Now().Unix()
-	nodesToDelete := make([]*MVCCNode, 0)
 
 	x := sl.header.next[0]
 	for x != nil {
-		next := x.next[0]
-
 		// 检查最新版本是否过期
 		if len(x.versions) > 0 {
 			latest := x.versions[len(x.versions)-1]
 			if latest.TTL > 0 && now-latest.CreatedAt >= latest.TTL {
-				nodesToDelete = append(nodesToDelete, x)
-				cleaned++
+				expiredKeys = append(expiredKeys, x.key)
 			}
 		}
-
-		x = next
+		x = x.next[0]
 	}
 
-	// 删除过期节点
-	for _, node := range nodesToDelete {
-		sl.deleteNode(node.key)
-	}
-
-	return cleaned
+	return expiredKeys
 }
 
 // GetAllWithTTL 获取所有键值对（包括TTL信息），用于快照

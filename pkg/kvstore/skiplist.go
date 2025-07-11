@@ -5,11 +5,6 @@ import (
 	"time"
 )
 
-const (
-	maxLevel    = 16
-	probability = 0.25
-)
-
 type KVPair struct {
 	Key   string
 	Value string

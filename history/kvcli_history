@@ -1,2 +1,5 @@
 GET foo
 HISTORY foo
+PUT user:1 Alice
+PUT user:1 Bob
+DEL user:1

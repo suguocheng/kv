@@ -3,10 +3,12 @@ package server
 import (
 	"bufio"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"kv/pkg/kvpb"
 	"kv/pkg/kvstore"
 	"kv/pkg/raft"
+	"kv/pkg/watch"
 	"net"
 	"strconv"
 	"strings"
@@ -149,6 +151,23 @@ func HandleConnection(conn net.Conn, kv *kvstore.KV, rf *raft.Raft) {
 				continue
 			}
 			handleTxnRequest(conn, parts[1], kv)
+
+		case "WATCH":
+			if len(parts) != 2 {
+				conn.Write([]byte("ERR Usage: WATCH <base64_encoded_request>\n"))
+				continue
+			}
+			handleWatchRequest(conn, parts[1], kv)
+
+		case "UNWATCH":
+			if len(parts) != 2 {
+				conn.Write([]byte("ERR Usage: UNWATCH <watcher_id>\n"))
+				continue
+			}
+			handleUnwatchRequest(conn, parts[1], kv)
+
+		case "WATCHSTATS":
+			handleWatchStatsRequest(conn, kv)
 
 		default:
 			conn.Write([]byte("ERR Unknown command\n"))
@@ -335,4 +354,127 @@ func handleTxnRequest(conn net.Conn, b64Data string, kv *kvstore.KV) {
 	}
 	b64 := base64.StdEncoding.EncodeToString(respData)
 	conn.Write([]byte(b64 + "\n"))
+}
+
+// handleWatchRequest 处理Watch请求
+func handleWatchRequest(conn net.Conn, b64Data string, kv *kvstore.KV) {
+	data, err := base64.StdEncoding.DecodeString(b64Data)
+	if err != nil {
+		conn.Write([]byte("ERR watch base64 decode failed\n"))
+		return
+	}
+
+	var req kvpb.WatchRequest
+	if err := proto.Unmarshal(data, &req); err != nil {
+		conn.Write([]byte("ERR watch proto unmarshal failed\n"))
+		return
+	}
+
+	var watcher *watch.Watcher
+	var err2 error
+
+	// 根据请求类型创建监听器
+	if req.Key != "" {
+		if req.WatcherId != "" {
+			watcher, err2 = kv.WatchKeyWithID(req.WatcherId, req.Key)
+		} else {
+			watcher, err2 = kv.WatchKey(req.Key)
+		}
+	} else if req.Prefix != "" {
+		if req.WatcherId != "" {
+			watcher, err2 = kv.WatchPrefixWithID(req.WatcherId, req.Prefix)
+		} else {
+			watcher, err2 = kv.WatchPrefix(req.Prefix)
+		}
+	} else {
+		conn.Write([]byte("ERR either key or prefix must be specified\n"))
+		return
+	}
+
+	if err2 != nil {
+		conn.Write([]byte("ERR watch creation failed: " + err2.Error() + "\n"))
+		return
+	}
+
+	// 创建响应
+	resp := &kvpb.WatchResponse{
+		WatcherId: watcher.ID,
+		Success:   true,
+	}
+
+	respData, err := proto.Marshal(resp)
+	if err != nil {
+		conn.Write([]byte("ERR watch response marshal failed\n"))
+		return
+	}
+
+	b64 := base64.StdEncoding.EncodeToString(respData)
+	conn.Write([]byte(b64 + "\n"))
+
+	// 启动事件流处理
+	go handleWatchStream(conn, watcher)
+}
+
+// handleWatchStream 处理Watch事件流
+func handleWatchStream(conn net.Conn, watcher *watch.Watcher) {
+	defer watcher.Close()
+
+	// 创建事件流
+	stream := watch.NewWatchStream(watcher)
+	defer stream.Close()
+
+	for {
+		select {
+		case event := <-stream.Events():
+			// 将事件转换为protobuf格式
+			pbEvent := &kvpb.WatchEvent{
+				Type:      int32(event.Type),
+				Key:       event.Key,
+				Value:     event.Value,
+				Revision:  event.Revision,
+				Timestamp: event.Timestamp.Unix(),
+				Ttl:       event.TTL,
+			}
+
+			eventData, err := proto.Marshal(pbEvent)
+			if err != nil {
+				continue
+			}
+
+			b64 := base64.StdEncoding.EncodeToString(eventData)
+			conn.Write([]byte("EVENT " + b64 + "\n"))
+
+		case err := <-stream.Errors():
+			conn.Write([]byte("ERROR " + err.Error() + "\n"))
+			return
+
+		case <-stream.Done():
+			return
+		}
+	}
+}
+
+// handleUnwatchRequest 处理Unwatch请求
+func handleUnwatchRequest(conn net.Conn, watcherID string, kv *kvstore.KV) {
+	err := kv.Unwatch(watcherID)
+	if err != nil {
+		conn.Write([]byte("ERR unwatch failed: " + err.Error() + "\n"))
+		return
+	}
+
+	conn.Write([]byte("OK\n"))
+}
+
+// handleWatchStatsRequest 处理Watch统计信息请求
+func handleWatchStatsRequest(conn net.Conn, kv *kvstore.KV) {
+	stats := kv.GetWatchStats()
+
+	// 转换为JSON格式
+	statsJSON, err := json.Marshal(stats)
+	if err != nil {
+		conn.Write([]byte("ERR stats marshal failed\n"))
+		return
+	}
+
+	conn.Write([]byte(string(statsJSON) + "\n"))
 }

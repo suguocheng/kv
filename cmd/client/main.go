@@ -76,6 +76,12 @@ func main() {
 			handleStats(cli)
 		case "TXN":
 			handleTxn(cli, line)
+		case "WATCH":
+			handleWatch(cli, parts[1:])
+		case "UNWATCH":
+			handleUnwatch(cli, parts[1:])
+		case "WATCHSTATS":
+			handleWatchStats(cli)
 		default:
 			resp, err := cli.SendCommand(cmd)
 			if err != nil {
@@ -109,6 +115,10 @@ func printHelp() {
 	fmt.Println("    RANGE start end [rev] [limit] - 范围查询（支持版本）")
 	fmt.Println("    COMPACT revision              - 压缩版本历史")
 	fmt.Println("    STATS                         - 获取统计信息")
+	fmt.Println("  Watch操作:")
+	fmt.Println("    WATCH key|prefix [id]         - 监听键或前缀的变化")
+	fmt.Println("    UNWATCH watcher_id            - 取消监听")
+	fmt.Println("    WATCHSTATS                    - 获取Watch统计信息")
 	fmt.Println("  其他:")
 	fmt.Println("    exit/quit                     - 退出")
 	fmt.Println()
@@ -471,5 +481,97 @@ func formatTxnResponse(resp *kvpb.TxnResponse) string {
 		return fmt.Sprintf("成功 (执行了 %d 个操作)", len(resp.Responses))
 	} else {
 		return fmt.Sprintf("失败 (执行了 %d 个操作)", len(resp.Responses))
+	}
+}
+
+// handleWatch 处理Watch命令
+func handleWatch(cli *client.Client, args []string) {
+	if len(args) < 1 {
+		fmt.Println("用法: WATCH key|prefix [watcher_id]")
+		fmt.Println("  例如: WATCH user:1")
+		fmt.Println("  例如: WATCH user: my-watcher-1")
+		return
+	}
+
+	key := args[0]
+	var watcherID string
+	if len(args) >= 2 {
+		watcherID = args[1]
+	}
+
+	var stream *client.WatchStream
+	var err error
+
+	// 判断是键还是前缀
+	if strings.HasSuffix(key, ":") {
+		// 前缀监听
+		if watcherID != "" {
+			stream, err = cli.WatchPrefixWithID(key, watcherID)
+		} else {
+			stream, err = cli.WatchPrefix(key)
+		}
+	} else {
+		// 键监听
+		if watcherID != "" {
+			stream, err = cli.WatchKeyWithID(key, watcherID)
+		} else {
+			stream, err = cli.WatchKey(key)
+		}
+	}
+
+	if err != nil {
+		fmt.Printf("创建监听器失败: %v\n", err)
+		return
+	}
+
+	fmt.Printf("开始监听 %s...\n", key)
+	if watcherID != "" {
+		fmt.Printf("监听器ID: %s\n", watcherID)
+	}
+
+	// 启动事件监听
+	go func() {
+		defer stream.Close()
+
+		for {
+			select {
+			case event := <-stream.Events():
+				fmt.Printf("事件: %s\n", event.String())
+			case err := <-stream.Errors():
+				fmt.Printf("监听错误: %v\n", err)
+				return
+			}
+		}
+	}()
+}
+
+// handleUnwatch 处理Unwatch命令
+func handleUnwatch(cli *client.Client, args []string) {
+	if len(args) != 1 {
+		fmt.Println("用法: UNWATCH watcher_id")
+		return
+	}
+
+	watcherID := args[0]
+	err := cli.Unwatch(watcherID)
+	if err != nil {
+		fmt.Printf("取消监听失败: %v\n", err)
+		return
+	}
+
+	fmt.Printf("成功取消监听器: %s\n", watcherID)
+}
+
+// handleWatchStats 处理Watch统计信息命令
+func handleWatchStats(cli *client.Client) {
+	stats, err := cli.GetWatchStats()
+	if err != nil {
+		fmt.Printf("获取Watch统计信息失败: %v\n", err)
+		return
+	}
+
+	fmt.Println("Watch统计信息:")
+	for key, value := range stats {
+		fmt.Printf("  %s: %v\n", key, value)
 	}
 }
