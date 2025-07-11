@@ -16,16 +16,9 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// type KVStore interface {
-// 	NewKV(filepath string) (*KV, error)
-// 	Put(key string, value string) error
-// 	Get(key string) (string, error)
-// 	Delete(key string) error
-// }
-
 type KV struct {
 	walManager        *WALManager
-	store             *MVCCSkipList // 改为MVCC跳表
+	store             *SkipList // 改为MVCC跳表
 	mu                sync.RWMutex
 	snapshotPath      string // 快照文件路径
 	lastSnapshotIndex int    // 最后快照的索引
@@ -46,7 +39,7 @@ func NewKV(walDir string, maxEntriesPerFile int) (*KV, error) {
 
 	kv := &KV{
 		walManager:   walManager,
-		store:        NewMVCCSkipList(), // 使用MVCC跳表
+		store:        NewSkipList(), // 使用MVCC跳表
 		snapshotPath: snapshotPath,
 		stopCleanup:  make(chan struct{}),
 		watcher:      watch.NewKVWatcher(), // 初始化Watch功能
@@ -153,7 +146,7 @@ func (kv *KV) RestoreFromSnapshotData(snapshot []byte) error {
 	if err := proto.Unmarshal(snapshot, &kvStore); err != nil {
 		return err
 	}
-	kv.store = NewMVCCSkipList()
+	kv.store = NewSkipList()
 
 	restored := 0
 	skipped := 0

@@ -315,7 +315,9 @@ func handleCompactRequest(conn net.Conn, b64Data string, kv *kvstore.KV, rf *raf
 	}
 
 	_, _, isLeader := rf.Start(opData)
-	if !isLeader {
+	if isLeader {
+		conn.Write([]byte("OK\n"))
+	} else {
 		conn.Write([]byte("Not_Leader\n"))
 		return
 	}
