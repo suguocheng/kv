@@ -1,0 +1,87 @@
+syntax = "proto3";
+package kvpb;
+
+option go_package = "kv/pkg/proto/kvpb";
+
+import "mvcc.proto";
+import "op.proto";
+import "watch.proto";
+import "transaction.proto";
+
+// 统一的 KV gRPC 服务
+service KVService {
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc Put(PutRequest) returns (PutResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+  rpc GetWithRevision(GetWithRevisionRequest) returns (GetWithRevisionResponse);
+  rpc PutWithTTL(PutWithTTLRequest) returns (PutWithTTLResponse);
+  rpc Range(RangeRequest) returns (RangeResponse);
+  rpc History(HistoryRequest) returns (HistoryResponse);
+  rpc Compact(CompactRequest) returns (CompactResponse);
+  rpc Txn(TxnRequest) returns (TxnResponse);
+  rpc Watch(WatchRequest) returns (stream WatchEvent); // 事件流
+  rpc Unwatch(UnwatchRequest) returns (UnwatchResponse);
+  rpc GetStats(GetStatsRequest) returns (GetStatsResponse);
+  rpc GetWatchStats(GetWatchStatsRequest) returns (GetWatchStatsResponse);
+}
+
+// 基础请求响应
+message GetRequest {
+  string key = 1;
+}
+message GetResponse {
+  string value = 1;
+  bool found = 2;
+  string error = 3;
+}
+message PutRequest {
+  string key = 1;
+  string value = 2;
+}
+message PutResponse {
+  bool success = 1;
+  string error = 2;
+}
+message DeleteRequest {
+  string key = 1;
+}
+message DeleteResponse {
+  bool success = 1;
+  string error = 2;
+}
+message GetWithRevisionRequest {
+  string key = 1;
+  int64 revision = 2;
+}
+message GetWithRevisionResponse {
+  string value = 1;
+  int64 revision = 2;
+  bool found = 3;
+  string error = 4;
+}
+message PutWithTTLRequest {
+  string key = 1;
+  string value = 2;
+  int64 ttl = 3;
+}
+message PutWithTTLResponse {
+  bool success = 1;
+  string error = 2;
+}
+message GetStatsRequest {}
+message GetStatsResponse {
+  map<string, string> stats = 1;
+  string error = 2;
+}
+message GetWatchStatsRequest {}
+message GetWatchStatsResponse {
+  map<string, string> stats = 1;
+  string error = 2;
+}
+message UnwatchRequest {
+  string watcher_id = 1;
+}
+message UnwatchResponse {
+  bool success = 1;
+  string error = 2;
+} 

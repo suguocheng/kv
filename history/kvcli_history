@@ -3,3 +3,32 @@ HISTORY foo
 PUT user:1 Alice
 PUT user:1 Bob
 DEL user:1
+PUT foo bar
+GET foo
+DEL foo
+GET foo
+PUTTTL foo bar 5
+GET foo
+\
+PUTTTL foo bar 5
+GET foo
+PUT foo v1
+PUT foo v2
+PUT foo v3
+GETREV foo 1
+GETREV foo 2
+GETREV foo 3
+HISTORY foo 5
+PUT a 1
+PUT b 2
+PUT c 3
+RANGE a d
+COMPACT 2
+HISTORY foo 5
+TXN
+PUT foo newval
+PUT a1 v1
+PUT a2 v2
+stats
+put 1 1
+help

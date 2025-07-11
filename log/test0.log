@@ -1,8 +1,6 @@
 Listening on localhost:9000
-2025/07/11 11:52:59 raft.go:457: 连接1号节点成功
-2025/07/11 11:53:00 raft.go:457: 连接2号节点成功
-Cleaned up 1 expired keys
-Cleaned up 1 expired keys
-2025/07/11 11:58:00 rpc.go:226: AppendEntries to 2 failed: connection is shut down, 清理连接等待重连
-2025/07/11 11:58:00 rpc.go:226: AppendEntries to 1 failed: connection is shut down, 清理连接等待重连
-2025/07/11 11:58:00 raft.go:462: 与2号节点连接断开,重试...
+2025/07/11 18:52:30 raft.go:457: 连接1号节点成功
+2025/07/11 18:52:30 raft.go:457: 连接2号节点成功
+2025/07/11 18:57:06 rpc.go:226: AppendEntries to 2 failed: connection is shut down, 清理连接等待重连
+2025/07/11 18:57:06 raft.go:462: 与1号节点连接断开,重试...
+2025/07/11 18:57:06 raft.go:462: 与2号节点连接断开,重试...
