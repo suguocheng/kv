@@ -382,7 +382,7 @@ func (kv *KV) Txn(req *kvpb.TxnRequest) (*kvpb.TxnResponse, error) {
 	defer kv.mu.Unlock()
 
 	succeeded := true
-	// 1. 条件判断
+	// 条件判断
 	for _, cmp := range req.Compare {
 		if !kv.evalCompare(cmp) {
 			succeeded = false
@@ -397,6 +397,7 @@ func (kv *KV) Txn(req *kvpb.TxnRequest) (*kvpb.TxnResponse, error) {
 		ops = req.Failure
 	}
 
+	// 依次执行操作
 	responses := make([]*kvpb.OpResponse, 0, len(ops))
 	for _, op := range ops {
 		resp := kv.applyOp(op)

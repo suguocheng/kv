@@ -12,7 +12,6 @@ const (
 )
 
 // VersionedKV 表示带版本的键值对
-// 用于MVCC跳表的多版本管理
 // 字段含义参考etcd等实现
 type VersionedKV struct {
 	Key        string

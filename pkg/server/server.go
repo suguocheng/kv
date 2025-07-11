@@ -38,88 +38,35 @@ func HandleConnection(conn net.Conn, kv *kvstore.KV, rf *raft.Raft) {
 				conn.Write([]byte("ERR Usage: GET key\n"))
 				continue
 			}
-			val, err := kv.Get(parts[1])
-			if err == nil {
-				conn.Write([]byte(val + "\n"))
-			} else {
-				conn.Write([]byte("NOTFOUND\n"))
-			}
+			handleGetRequest(conn, parts[1], kv)
 
 		case "GETREV":
 			if len(parts) != 3 {
 				conn.Write([]byte("ERR Usage: GETREV key revision\n"))
 				continue
 			}
-			revision, err := strconv.ParseInt(parts[2], 10, 64)
-			if err != nil {
-				conn.Write([]byte("ERR Invalid revision number\n"))
-				continue
-			}
-			val, rev, err := kv.GetWithRevision(parts[1], revision)
-			if err == nil {
-				conn.Write([]byte(fmt.Sprintf("%d %s\n", rev, val)))
-			} else {
-				conn.Write([]byte("NOTFOUND\n"))
-			}
+			handleGetRevRequest(conn, parts[1], parts[2], kv)
 
 		case "PUT":
 			if len(parts) != 3 {
 				conn.Write([]byte("ERR Usage: PUT key value\n"))
 				continue
 			}
-			op := &kvpb.Op{Type: "Put", Key: parts[1], Value: parts[2], Ttl: 0}
-			data, err := proto.Marshal(op)
-			if err != nil {
-				conn.Write([]byte("ERR marshal failed\n"))
-				continue
-			}
-			_, _, isLeader := rf.Start(data)
-			if isLeader {
-				conn.Write([]byte("OK\n"))
-			} else {
-				conn.Write([]byte("Not_Leader\n"))
-			}
+			handlePutRequest(conn, parts[1], parts[2], kv, rf)
 
 		case "PUTTTL":
 			if len(parts) != 4 {
 				conn.Write([]byte("ERR Usage: PUTTTL key value ttl\n"))
 				continue
 			}
-			ttl, err := strconv.ParseInt(parts[3], 10, 64)
-			if err != nil || ttl < 0 {
-				conn.Write([]byte("ERR Invalid TTL (must be non-negative integer)\n"))
-				continue
-			}
-			op := &kvpb.Op{Type: "PutTTL", Key: parts[1], Value: parts[2], Ttl: ttl}
-			data, err := proto.Marshal(op)
-			if err != nil {
-				conn.Write([]byte("ERR marshal failed\n"))
-				continue
-			}
-			_, _, isLeader := rf.Start(data)
-			if isLeader {
-				conn.Write([]byte("OK\n"))
-			} else {
-				conn.Write([]byte("Not_Leader\n"))
-			}
+			handlePutTTLRequest(conn, parts[1], parts[2], parts[3], kv, rf)
 
 		case "DEL":
 			if len(parts) != 2 {
 				conn.Write([]byte("ERR Usage: DEL key\n"))
 				continue
 			}
-			op := &kvpb.Op{Type: "Del", Key: parts[1]}
-			data, err := proto.Marshal(op)
-			if err != nil {
-				conn.Write([]byte("ERR marshal failed\n"))
-				continue
-			}
-			_, _, isLeader := rf.Start(data)
-			if isLeader {
-				conn.Write([]byte("OK\n"))
-			} else {
-				conn.Write([]byte("Not_Leader\n"))
-			}
+			handleDelRequest(conn, parts[1], kv, rf)
 
 		case "HISTORY":
 			if len(parts) != 2 {
@@ -172,6 +119,83 @@ func HandleConnection(conn net.Conn, kv *kvstore.KV, rf *raft.Raft) {
 		default:
 			conn.Write([]byte("ERR Unknown command\n"))
 		}
+	}
+}
+
+// handleGetRequest 处理GET请求
+func handleGetRequest(conn net.Conn, key string, kv *kvstore.KV) {
+	val, err := kv.Get(key)
+	if err == nil {
+		conn.Write([]byte(val + "\n"))
+	} else {
+		conn.Write([]byte("NOTFOUND\n"))
+	}
+}
+
+// handleGetRevRequest 处理版本GET请求
+func handleGetRevRequest(conn net.Conn, key, revStr string, kv *kvstore.KV) {
+	revision, err := strconv.ParseInt(revStr, 10, 64)
+	if err != nil {
+		conn.Write([]byte("ERR Invalid revision number\n"))
+		return
+	}
+	val, rev, err := kv.GetWithRevision(key, revision)
+	if err == nil {
+		conn.Write([]byte(fmt.Sprintf("%d %s\n", rev, val)))
+	} else {
+		conn.Write([]byte("NOTFOUND\n"))
+	}
+}
+
+// handlePutRequest 处理PUT请求
+func handlePutRequest(conn net.Conn, key, value string, kv *kvstore.KV, rf *raft.Raft) {
+	op := &kvpb.Op{Type: "Put", Key: key, Value: value, Ttl: 0}
+	data, err := proto.Marshal(op)
+	if err != nil {
+		conn.Write([]byte("ERR marshal failed\n"))
+		return
+	}
+	_, _, isLeader := rf.Start(data)
+	if isLeader {
+		conn.Write([]byte("OK\n"))
+	} else {
+		conn.Write([]byte("Not_Leader\n"))
+	}
+}
+
+// handlePutTTLRequest 处理PUTTTL请求
+func handlePutTTLRequest(conn net.Conn, key, value, ttlStr string, kv *kvstore.KV, rf *raft.Raft) {
+	ttl, err := strconv.ParseInt(ttlStr, 10, 64)
+	if err != nil || ttl < 0 {
+		conn.Write([]byte("ERR Invalid TTL (must be non-negative integer)\n"))
+		return
+	}
+	op := &kvpb.Op{Type: "PutTTL", Key: key, Value: value, Ttl: ttl}
+	data, err := proto.Marshal(op)
+	if err != nil {
+		conn.Write([]byte("ERR marshal failed\n"))
+		return
+	}
+	_, _, isLeader := rf.Start(data)
+	if isLeader {
+		conn.Write([]byte("OK\n"))
+	} else {
+		conn.Write([]byte("Not_Leader\n"))
+	}
+}
+
+func handleDelRequest(conn net.Conn, key string, kv *kvstore.KV, rf *raft.Raft) {
+	op := &kvpb.Op{Type: "Del", Key: key}
+	data, err := proto.Marshal(op)
+	if err != nil {
+		conn.Write([]byte("ERR marshal failed\n"))
+		return
+	}
+	_, _, isLeader := rf.Start(data)
+	if isLeader {
+		conn.Write([]byte("OK\n"))
+	} else {
+		conn.Write([]byte("Not_Leader\n"))
 	}
 }
 
