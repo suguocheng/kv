@@ -102,6 +102,11 @@ func startApplyLoop(rf *raft.Raft, kv *kvstore.KV, applyCh chan raft.ApplyMsg) {
 					if err != nil {
 						fmt.Printf("Failed to compact: %v\n", err)
 					}
+				case "Txn":
+					// 处理事务操作
+					if err := kv.ApplyTxn(op.Value); err != nil {
+						fmt.Printf("Failed to apply transaction: %v\n", err)
+					}
 				default:
 					fmt.Println("Unknown Op type:", op.Type)
 				}

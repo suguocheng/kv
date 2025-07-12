@@ -492,3 +492,25 @@ func Make(me int, peerAddrs map[int]string, myAddr string, applyCh chan ApplyMsg
 func (rf *Raft) Ping(args struct{}, reply *struct{}) error {
 	return nil
 }
+
+// GetLastApplied 获取最后应用的索引
+func (rf *Raft) GetLastApplied() int {
+	rf.mu.RLock()
+	defer rf.mu.RUnlock()
+	return rf.lastApplied
+}
+
+// WaitForIndex 等待特定索引被应用（用于同步操作）
+func (rf *Raft) WaitForIndex(index int, timeout time.Duration) bool {
+	startTime := time.Now()
+	for time.Since(startTime) < timeout {
+		rf.mu.RLock()
+		if rf.lastApplied >= index {
+			rf.mu.RUnlock()
+			return true
+		}
+		rf.mu.RUnlock()
+		time.Sleep(10 * time.Millisecond)
+	}
+	return false
+}

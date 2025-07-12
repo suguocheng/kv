@@ -12,6 +12,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -97,7 +98,7 @@ func HandleConnection(conn net.Conn, kv *kvstore.KV, rf *raft.Raft) {
 				conn.Write([]byte("ERR Usage: TXN <base64_encoded_request>\n"))
 				continue
 			}
-			handleTxnRequest(conn, parts[1], kv)
+			handleTxnRequest(conn, parts[1], kv, rf)
 
 		case "WATCH":
 			if len(parts) != 2 {
@@ -357,7 +358,7 @@ func handleStatsRequest(conn net.Conn, kv *kvstore.KV) {
 }
 
 // handleTxnRequest 处理事务请求
-func handleTxnRequest(conn net.Conn, b64Data string, kv *kvstore.KV) {
+func handleTxnRequest(conn net.Conn, b64Data string, kv *kvstore.KV, rf *raft.Raft) {
 	data, err := base64.StdEncoding.DecodeString(b64Data)
 	if err != nil {
 		conn.Write([]byte("ERR txn base64 decode failed\n"))
@@ -368,16 +369,58 @@ func handleTxnRequest(conn net.Conn, b64Data string, kv *kvstore.KV) {
 		conn.Write([]byte("ERR txn proto unmarshal failed\n"))
 		return
 	}
-	resp, err := kv.Txn(&req)
-	if err != nil {
-		conn.Write([]byte("ERR txn failed\n"))
+
+	// 检查是否为leader
+	_, isLeader := rf.GetState()
+	if !isLeader {
+		conn.Write([]byte("Not_Leader\n"))
 		return
 	}
-	respData, err := proto.Marshal(resp)
+
+	// 将事务请求包装为Op，通过raft层处理
+	op := &kvpb.Op{
+		Type:  "Txn",
+		Key:   "txn",   // 使用固定的key标识事务操作
+		Value: b64Data, // 将原始事务请求数据存储在Value字段
+	}
+	opData, err := proto.Marshal(op)
 	if err != nil {
 		conn.Write([]byte("ERR txn marshal failed\n"))
 		return
 	}
+
+	// 提交到raft层并获取索引
+	index, _, _ := rf.Start(opData)
+
+	// 等待raft应用完成
+	// 使用raft层的同步等待机制
+	if !rf.WaitForIndex(index, 5*time.Second) {
+		conn.Write([]byte("ERR txn timeout\n"))
+		return
+	}
+
+	// 检查是否仍然是leader
+	_, stillLeader := rf.GetState()
+	if !stillLeader {
+		conn.Write([]byte("Not_Leader\n"))
+		return
+	}
+
+	// 事务已经在raft层执行完成，现在获取结果
+	// 直接执行事务获取结果（raft层已经执行过了，这里只是获取响应）
+	resp, err := kv.TxnWithoutWAL(&req)
+	if err != nil {
+		conn.Write([]byte("ERR txn failed: " + err.Error() + "\n"))
+		return
+	}
+
+	// 返回事务响应
+	respData, err := proto.Marshal(resp)
+	if err != nil {
+		conn.Write([]byte("ERR txn response marshal failed\n"))
+		return
+	}
+
 	b64 := base64.StdEncoding.EncodeToString(respData)
 	conn.Write([]byte(b64 + "\n"))
 }

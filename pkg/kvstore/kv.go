@@ -2,6 +2,7 @@ package kvstore
 
 import (
 	"bufio"
+	"encoding/base64"
 	"fmt"
 	"kv/pkg/kvpb"
 	"kv/pkg/watch"
@@ -363,10 +364,88 @@ func (kv *KV) replayWALFile(walPath string) error {
 			}
 		case "DELETE":
 			kv.store.Delete(parts[1])
+		case "TXN":
+			// 处理事务操作
+			if len(parts) >= 4 {
+				succeeded := parts[1] == "true"
+				txnData := parts[3]
+				// 重新构造事务请求并执行
+				data, err := base64.StdEncoding.DecodeString(txnData)
+				if err != nil {
+					continue
+				}
+				var req kvpb.TxnRequest
+				if err := proto.Unmarshal(data, &req); err != nil {
+					continue
+				}
+				// 根据原始的成功/失败状态执行操作
+				var ops []*kvpb.Op
+				if succeeded {
+					ops = req.Success
+				} else {
+					ops = req.Failure
+				}
+				// 直接执行操作，不写入WAL（因为这是重放）
+				for _, op := range ops {
+					kv.applyOp(op)
+				}
+			}
 		}
 	}
 
 	return scanner.Err()
+}
+
+// ApplyTxn 在raft层应用事务操作
+func (kv *KV) ApplyTxn(txnData string) error {
+	// 解码事务数据
+	data, err := base64.StdEncoding.DecodeString(txnData)
+	if err != nil {
+		return fmt.Errorf("failed to decode txn data: %v", err)
+	}
+
+	var req kvpb.TxnRequest
+	if err := proto.Unmarshal(data, &req); err != nil {
+		return fmt.Errorf("failed to unmarshal txn request: %v", err)
+	}
+
+	// 在raft层执行事务并写入WAL
+	_, err = kv.Txn(&req)
+	return err
+}
+
+// TxnWithoutWAL 事务操作，但不写入WAL（用于raft层应用）
+func (kv *KV) TxnWithoutWAL(req *kvpb.TxnRequest) (*kvpb.TxnResponse, error) {
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+
+	succeeded := true
+	// 条件判断
+	for _, cmp := range req.Compare {
+		if !kv.evalCompare(cmp) {
+			succeeded = false
+			break
+		}
+	}
+
+	var ops []*kvpb.Op
+	if succeeded {
+		ops = req.Success
+	} else {
+		ops = req.Failure
+	}
+
+	// 不写入WAL，直接执行操作
+	responses := make([]*kvpb.OpResponse, 0, len(ops))
+	for _, op := range ops {
+		resp := kv.applyOp(op)
+		responses = append(responses, resp)
+	}
+
+	return &kvpb.TxnResponse{
+		Succeeded: succeeded,
+		Responses: responses,
+	}, nil
 }
 
 // Txn 事务操作，支持条件判断和原子提交
@@ -390,6 +469,15 @@ func (kv *KV) Txn(req *kvpb.TxnRequest) (*kvpb.TxnResponse, error) {
 		ops = req.Failure
 	}
 
+	// 如果有写操作，需要写入WAL
+	if len(ops) > 0 && kv.hasWriteOps(ops) {
+		// 将整个事务作为一条WAL日志写入
+		logEntry := kv.formatTxnToWAL(req, succeeded)
+		if err := kv.walManager.WriteLogEntry(logEntry); err != nil {
+			return nil, fmt.Errorf("failed to write txn to WAL: %v", err)
+		}
+	}
+
 	// 依次执行操作
 	responses := make([]*kvpb.OpResponse, 0, len(ops))
 	for _, op := range ops {
@@ -401,6 +489,27 @@ func (kv *KV) Txn(req *kvpb.TxnRequest) (*kvpb.TxnResponse, error) {
 		Succeeded: succeeded,
 		Responses: responses,
 	}, nil
+}
+
+// hasWriteOps 检查操作列表中是否包含写操作
+func (kv *KV) hasWriteOps(ops []*kvpb.Op) bool {
+	for _, op := range ops {
+		if op.Type == "PUT" || op.Type == "DELETE" || op.Type == "DEL" {
+			return true
+		}
+	}
+	return false
+}
+
+// formatTxnToWAL 将事务格式化为WAL日志字符串
+func (kv *KV) formatTxnToWAL(req *kvpb.TxnRequest, succeeded bool) string {
+	timestamp := time.Now().Unix()
+
+	// 格式: TXN <succeeded> <timestamp> <base64_encoded_request>
+	txnData, _ := proto.Marshal(req)
+	b64Data := base64.StdEncoding.EncodeToString(txnData)
+
+	return fmt.Sprintf("TXN %t %d %s", succeeded, timestamp, b64Data)
 }
 
 // evalCompare 评估比较条件
@@ -474,15 +583,12 @@ func (kv *KV) compareString(a, b string, result kvpb.CompareResult) bool {
 func (kv *KV) applyOp(op *kvpb.Op) *kvpb.OpResponse {
 	switch op.Type {
 	case "PUT":
-		// 写入WAL
-		logEntry := formatOpToWAL(op)
-		if err := kv.walManager.WriteLogEntry(logEntry); err != nil {
-			return &kvpb.OpResponse{Key: op.Key, Error: "WAL写入失败: " + err.Error()}
-		}
 		revision, err := kv.store.Put(op.Key, op.Value, op.Ttl)
 		if err != nil {
 			return &kvpb.OpResponse{Error: err.Error()}
 		}
+		// 通知Watch监听器
+		kv.watcher.NotifyPut(op.Key, op.Value, revision, op.Ttl)
 		return &kvpb.OpResponse{Key: op.Key, Version: revision}
 
 	case "GET":
@@ -498,15 +604,12 @@ func (kv *KV) applyOp(op *kvpb.Op) *kvpb.OpResponse {
 		}
 
 	case "DELETE":
-		// 写入WAL
-		logEntry := formatOpToWAL(op)
-		if err := kv.walManager.WriteLogEntry(logEntry); err != nil {
-			return &kvpb.OpResponse{Key: op.Key, Error: "WAL写入失败: " + err.Error()}
-		}
 		revision, err := kv.store.Delete(op.Key)
 		if err != nil {
 			return &kvpb.OpResponse{Key: op.Key, Error: err.Error()}
 		}
+		// 通知Watch监听器
+		kv.watcher.NotifyDelete(op.Key, revision)
 		return &kvpb.OpResponse{Key: op.Key, Version: revision}
 
 	default:
