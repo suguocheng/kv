@@ -617,20 +617,6 @@ func (kv *KV) applyOp(op *kvpb.Op) *kvpb.OpResponse {
 	}
 }
 
-// formatOpToWAL 格式化操作为WAL日志字符串
-func formatOpToWAL(op *kvpb.Op) string {
-	switch op.Type {
-	case "PUT":
-		// 兼容PUT/PUTTTL
-		timestamp := time.Now().Unix()
-		return fmt.Sprintf("PUT %s %s %d %d", op.Key, op.Value, op.Ttl, timestamp)
-	case "DELETE":
-		return fmt.Sprintf("DEL %s", op.Key)
-	default:
-		return "" // GET等不写入WAL
-	}
-}
-
 // GetStats 获取统计信息
 func (kv *KV) GetStats() map[string]interface{} {
 	kv.mu.RLock()

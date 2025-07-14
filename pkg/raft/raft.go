@@ -398,53 +398,11 @@ func (rf *Raft) startElection() {
 	// }
 }
 
-func Make(me int, peerAddrs map[int]string, myAddr string, applyCh chan ApplyMsg, statePath string, snapshotPath string) *Raft {
-	rf := &Raft{
-		mu:             sync.RWMutex{},
-		peerAddrs:      peerAddrs,
-		statePath:      statePath,
-		snapshotPath:   snapshotPath,
-		me:             me,
-		dead:           0,
-		currentTerm:    0,
-		voteFor:        -1,
-		logs:           make([]LogEntry, 1), // dummy entry at index 0
-		commitIndex:    0,
-		lastApplied:    0,
-		nextIndex:      make([]int, len(peerAddrs)),
-		matchIndex:     make([]int, len(peerAddrs)),
-		state:          "Follower",
-		electionTimer:  time.NewTimer(time.Duration(randomInRange(1000, 2000)) * time.Millisecond),
-		heartbeatTimer: time.NewTimer(time.Duration(125) * time.Millisecond),
-		applyCh:        applyCh,
-		replicatorCond: make([]*sync.Cond, len(peerAddrs)),
-	}
-
-	// initialize from state persisted before a crash
-	rf.readPersist()
-	rf.applyCond = sync.NewCond(&rf.mu)
-
-	// 启动本地 RPC 监听
-	go func() {
-		rpc.Register(rf)
-		raftAddr := peerAddrs[me] // 使用 Raft 通信端口（如8000）
-		ln, err := net.Listen("tcp", raftAddr)
-		if err != nil {
-			log.DPrintf("Raft %d listen error: %v", me, err)
-			return // 监听失败直接退出，避免nil指针panic
-		}
-		for {
-			conn, err := ln.Accept()
-			if err == nil {
-				go rpc.ServeConn(conn)
-			}
-		}
-	}()
-
-	// 连接 peers
+// connectToPeers 连接所有其他Raft节点
+func (rf *Raft) connectToPeers() {
 	rf.peers = make(map[int]*rpc.Client)
-	for id, addr := range peerAddrs {
-		if id == me {
+	for id, addr := range rf.peerAddrs {
+		if id == rf.me {
 			continue
 		}
 		go func(id int, addr string) {
@@ -472,7 +430,55 @@ func Make(me int, peerAddrs map[int]string, myAddr string, applyCh chan ApplyMsg
 			}
 		}(id, addr)
 	}
+}
 
+func Make(me int, peerAddrs map[int]string, myAddr string, applyCh chan ApplyMsg, statePath string, snapshotPath string) *Raft {
+	rf := &Raft{
+		mu:             sync.RWMutex{},
+		peerAddrs:      peerAddrs,
+		statePath:      statePath,
+		snapshotPath:   snapshotPath,
+		me:             me,
+		dead:           0,
+		currentTerm:    0,
+		voteFor:        -1,
+		logs:           make([]LogEntry, 1), // dummy entry at index 0
+		commitIndex:    0,
+		lastApplied:    0,
+		nextIndex:      make([]int, len(peerAddrs)),
+		matchIndex:     make([]int, len(peerAddrs)),
+		state:          "Follower",
+		electionTimer:  time.NewTimer(time.Duration(randomInRange(1000, 2000)) * time.Millisecond),
+		heartbeatTimer: time.NewTimer(time.Duration(125) * time.Millisecond),
+		applyCh:        applyCh,
+		replicatorCond: make([]*sync.Cond, len(peerAddrs)),
+	}
+
+	// 恢复持久化状态
+	rf.readPersist()
+	rf.applyCond = sync.NewCond(&rf.mu)
+
+	// 启动本地 RPC 监听
+	go func() {
+		rpc.Register(rf)
+		raftAddr := peerAddrs[me] // 使用 Raft 通信端口（如8000）
+		ln, err := net.Listen("tcp", raftAddr)
+		if err != nil {
+			log.DPrintf("Raft %d listen error: %v", me, err)
+			return // 监听失败直接退出，避免nil指针panic
+		}
+		for {
+			conn, err := ln.Accept()
+			if err == nil {
+				go rpc.ServeConn(conn)
+			}
+		}
+	}()
+
+	// 连接所有其他节点
+	rf.connectToPeers()
+
+	// 启动各种协程
 	for id, _ := range peerAddrs {
 		rf.matchIndex[id], rf.nextIndex[id] = 0, rf.getLastLog().Index+1
 		if id != rf.me {
@@ -491,13 +497,6 @@ func Make(me int, peerAddrs map[int]string, myAddr string, applyCh chan ApplyMsg
 
 func (rf *Raft) Ping(args struct{}, reply *struct{}) error {
 	return nil
-}
-
-// GetLastApplied 获取最后应用的索引
-func (rf *Raft) GetLastApplied() int {
-	rf.mu.RLock()
-	defer rf.mu.RUnlock()
-	return rf.lastApplied
 }
 
 // WaitForIndex 等待特定索引被应用（用于同步操作）

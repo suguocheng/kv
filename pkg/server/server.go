@@ -53,21 +53,21 @@ func HandleConnection(conn net.Conn, kv *kvstore.KV, rf *raft.Raft) {
 				conn.Write([]byte("ERR Usage: PUT key value\n"))
 				continue
 			}
-			handlePutRequest(conn, parts[1], parts[2], kv, rf)
+			handlePutRequest(conn, parts[1], parts[2], rf)
 
 		case "PUTTTL":
 			if len(parts) != 4 {
 				conn.Write([]byte("ERR Usage: PUTTTL key value ttl\n"))
 				continue
 			}
-			handlePutTTLRequest(conn, parts[1], parts[2], parts[3], kv, rf)
+			handlePutTTLRequest(conn, parts[1], parts[2], parts[3], rf)
 
 		case "DEL":
 			if len(parts) != 2 {
 				conn.Write([]byte("ERR Usage: DEL key\n"))
 				continue
 			}
-			handleDelRequest(conn, parts[1], kv, rf)
+			handleDelRequest(conn, parts[1], rf)
 
 		case "HISTORY":
 			if len(parts) != 2 {
@@ -140,6 +140,7 @@ func handleGetRevRequest(conn net.Conn, key, revStr string, kv *kvstore.KV) {
 		conn.Write([]byte("ERR Invalid revision number\n"))
 		return
 	}
+
 	val, rev, err := kv.GetWithRevision(key, revision)
 	if err == nil {
 		conn.Write([]byte(fmt.Sprintf("%d %s\n", rev, val)))
@@ -149,7 +150,7 @@ func handleGetRevRequest(conn net.Conn, key, revStr string, kv *kvstore.KV) {
 }
 
 // handlePutRequest 处理PUT请求
-func handlePutRequest(conn net.Conn, key, value string, kv *kvstore.KV, rf *raft.Raft) {
+func handlePutRequest(conn net.Conn, key, value string, rf *raft.Raft) {
 	op := &kvpb.Op{Type: "Put", Key: key, Value: value, Ttl: 0}
 	data, err := proto.Marshal(op)
 	if err != nil {
@@ -165,12 +166,13 @@ func handlePutRequest(conn net.Conn, key, value string, kv *kvstore.KV, rf *raft
 }
 
 // handlePutTTLRequest 处理PUTTTL请求
-func handlePutTTLRequest(conn net.Conn, key, value, ttlStr string, kv *kvstore.KV, rf *raft.Raft) {
+func handlePutTTLRequest(conn net.Conn, key, value, ttlStr string, rf *raft.Raft) {
 	ttl, err := strconv.ParseInt(ttlStr, 10, 64)
 	if err != nil || ttl < 0 {
 		conn.Write([]byte("ERR Invalid TTL (must be non-negative integer)\n"))
 		return
 	}
+
 	op := &kvpb.Op{Type: "PutTTL", Key: key, Value: value, Ttl: ttl}
 	data, err := proto.Marshal(op)
 	if err != nil {
@@ -185,7 +187,7 @@ func handlePutTTLRequest(conn net.Conn, key, value, ttlStr string, kv *kvstore.K
 	}
 }
 
-func handleDelRequest(conn net.Conn, key string, kv *kvstore.KV, rf *raft.Raft) {
+func handleDelRequest(conn net.Conn, key string, rf *raft.Raft) {
 	op := &kvpb.Op{Type: "Del", Key: key}
 	data, err := proto.Marshal(op)
 	if err != nil {
@@ -364,6 +366,7 @@ func handleTxnRequest(conn net.Conn, b64Data string, kv *kvstore.KV, rf *raft.Ra
 		conn.Write([]byte("ERR txn base64 decode failed\n"))
 		return
 	}
+
 	var req kvpb.TxnRequest
 	if err := proto.Unmarshal(data, &req); err != nil {
 		conn.Write([]byte("ERR txn proto unmarshal failed\n"))
