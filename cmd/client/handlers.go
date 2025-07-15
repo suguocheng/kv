@@ -282,7 +282,7 @@ func parseOps(parts []string) ([]*kvpb.Op, error) {
 			ops = append(ops, &kvpb.Op{
 				Type:  "PUT",
 				Key:   key,
-				Value: parts[i+2],
+				Value: []byte(parts[i+2]),
 			})
 			i += 3
 		case "DEL":

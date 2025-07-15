@@ -7,6 +7,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"kv/pkg/kvstore"
 )
 
 type LogEntry struct {
@@ -50,6 +52,7 @@ type Raft struct {
 	applyCh        chan ApplyMsg
 	applyCond      *sync.Cond
 	replicatorCond []*sync.Cond
+	walManager     *kvstore.WALManager // 新增：WAL管理器
 }
 
 // return currentTerm and whether this server
@@ -75,6 +78,16 @@ func (rf *Raft) Start(command []byte) (int, int, bool) {
 			Term:    rf.currentTerm,
 			Index:   index,
 		})
+		// 新增：写入WAL
+		if rf.walManager != nil {
+			entry := &kvstore.WALEntry{
+				Term:  uint64(rf.currentTerm),
+				Index: uint64(index),
+				Type:  kvstore.EntryNormal,
+				Data:  command,
+			}
+			rf.walManager.WriteEntry(entry)
+		}
 		rf.persist()
 		rf.nextIndex[rf.me] = index + 1
 		rf.matchIndex[rf.me] = index
@@ -432,7 +445,7 @@ func (rf *Raft) connectToPeers() {
 	}
 }
 
-func Make(me int, peerAddrs map[int]string, myAddr string, applyCh chan ApplyMsg, statePath string, snapshotPath string) *Raft {
+func Make(me int, peerAddrs map[int]string, myAddr string, applyCh chan ApplyMsg, statePath string, snapshotPath string, walManager *kvstore.WALManager) *Raft {
 	rf := &Raft{
 		mu:             sync.RWMutex{},
 		peerAddrs:      peerAddrs,
@@ -452,6 +465,7 @@ func Make(me int, peerAddrs map[int]string, myAddr string, applyCh chan ApplyMsg
 		heartbeatTimer: time.NewTimer(time.Duration(125) * time.Millisecond),
 		applyCh:        applyCh,
 		replicatorCond: make([]*sync.Cond, len(peerAddrs)),
+		walManager:     walManager,
 	}
 
 	// 恢复持久化状态

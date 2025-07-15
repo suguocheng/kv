@@ -2,6 +2,7 @@ package raft
 
 import (
 	"kv/log"
+	"kv/pkg/kvstore"
 	"time"
 )
 
@@ -183,6 +184,18 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		// if args.Entries != nil {
 		rf.logs = rf.logs[:args.PrevLogIndex-rf.getFirstLog().Index+1]
 		rf.logs = append(rf.logs, args.Entries...)
+		// 新增：写入WAL
+		if rf.walManager != nil {
+			for _, entry := range args.Entries {
+				walEntry := &kvstore.WALEntry{
+					Term:  uint64(entry.Term),
+					Index: uint64(entry.Index),
+					Type:  kvstore.EntryNormal,
+					Data:  entry.Command,
+				}
+				rf.walManager.WriteEntry(walEntry)
+			}
+		}
 		rf.persist()
 
 		// for index, entry := range args.Entries {

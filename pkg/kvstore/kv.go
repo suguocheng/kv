@@ -26,6 +26,7 @@ type KV struct {
 	cleanupTicker     *time.Ticker
 	stopCleanup       chan struct{}
 	watcher           *watch.KVWatcher // 添加Watch功能
+	LastAppliedIndex  int              // WAL重放后，记录最后已应用的raft日志索引
 }
 
 func NewKV(walDir string, maxEntriesPerFile int) (*KV, error) {
@@ -46,12 +47,29 @@ func NewKV(walDir string, maxEntriesPerFile int) (*KV, error) {
 		watcher:      watch.NewKVWatcher(), // 初始化Watch功能
 	}
 
-	// 1. 先从快照恢复
-	kv.RestoreFromSnapshot()
-	// 2. 再重放WAL
-	if err := kv.replayWALs(); err != nil {
-		return nil, err
+	// 1. 先从快照恢复，并设置lastSnapshotIndex
+	_ = kv.RestoreFromSnapshot()
+	// 读取快照点index
+	data, err := os.ReadFile(snapshotPath)
+	fromIdx := uint64(1)
+	if err == nil && len(data) > 0 {
+		var kvStore kvpb.KVStore
+		if proto.Unmarshal(data, &kvStore) == nil {
+			if len(kvStore.Pairs) > 0 {
+				// 取最大Ttl作为快照点（如无ModRev字段，可用其他合适字段，或直接跳过，fromIdx=1）
+				maxIdx := int64(0)
+				for _, pair := range kvStore.Pairs {
+					if pair.Ttl > maxIdx {
+						maxIdx = pair.Ttl
+					}
+				}
+				kv.lastSnapshotIndex = int(maxIdx)
+				fromIdx = uint64(maxIdx + 1)
+			}
+		}
 	}
+	// 2. 自动重放WAL，恢复未快照的内容
+	walManager.ReplayAllWALs(kv.ApplyWALEntry, fromIdx)
 
 	// 启动定期清理过期键的goroutine
 	kv.startCleanupRoutine()
@@ -181,27 +199,19 @@ func (kv *KV) RestoreFromSnapshotData(snapshot []byte) error {
 	return nil
 }
 
+// Put/PutWithTTL/Delete等方法只做业务apply，不再写WAL
 func (kv *KV) Put(key, value string) error {
-	return kv.PutWithTTL(key, value, 0) // 0表示永不过期
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+	_, err := kv.store.Put(key, value, 0)
+	return err
 }
 
-// PutWithTTL 设置键值对并指定TTL（秒）
 func (kv *KV) PutWithTTL(key, value string, ttl int64) error {
-	// 记录写入时间戳，格式：PUT key value ttl timestamp
-	timestamp := time.Now().Unix()
-	logEntry := fmt.Sprintf("PUT %s %s %d %d", key, value, ttl, timestamp)
-	if err := kv.walManager.WriteLogEntry(logEntry); err != nil {
-		return err
-	}
-
-	revision, err := kv.store.Put(key, value, ttl)
-	if err != nil {
-		return err
-	}
-
-	// 通知Watch监听器
-	kv.watcher.NotifyPut(key, value, revision, ttl)
-	return nil
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+	_, err := kv.store.Put(key, value, ttl)
+	return err
 }
 
 func (kv *KV) Get(key string) (string, error) {
@@ -213,21 +223,10 @@ func (kv *KV) Get(key string) (string, error) {
 }
 
 func (kv *KV) Delete(key string) error {
-	// 记录删除时间戳，格式：DELETE key timestamp
-	timestamp := time.Now().Unix()
-	logEntry := fmt.Sprintf("DELETE %s %d", key, timestamp)
-	if err := kv.walManager.WriteLogEntry(logEntry); err != nil {
-		return err
-	}
-
-	revision, err := kv.store.Delete(key)
-	if err != nil {
-		return err
-	}
-
-	// 通知Watch监听器
-	kv.watcher.NotifyDelete(key, revision)
-	return nil
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+	_, err := kv.store.Delete(key)
+	return err
 }
 
 func (kv *KV) Close() error {
@@ -240,7 +239,9 @@ func (kv *KV) Close() error {
 		close(kv.stopCleanup)
 	}
 
-	return kv.walManager.Close()
+	// WAL关闭由WALManager内部管理，不在此处调用
+	// return kv.walManager.Close()
+	return nil
 }
 
 func (kv *KV) SerializeState() ([]byte, error) {
@@ -266,23 +267,22 @@ func (kv *KV) SerializeState() ([]byte, error) {
 }
 
 // CleanupWALFiles 清理已快照的WAL文件 - 使用快照覆盖点逻辑
-func (kv *KV) CleanupWALFiles(snapshotIndex int) error {
+func (kv *KV) CleanupWALFiles(snapshotIndex uint64) error {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
 
 	// 更新最后快照索引
-	kv.lastSnapshotIndex = snapshotIndex
+	kv.lastSnapshotIndex = int(snapshotIndex)
 
 	return kv.walManager.CleanupWALFiles(snapshotIndex)
 }
 
 // GetWALStats 获取WAL统计信息
-func (kv *KV) GetWALStats() map[string]interface{} {
-	kv.mu.RLock()
-	defer kv.mu.RUnlock()
-
-	return kv.walManager.GetWALStats()
-}
+// func (kv *KV) GetWALStats() map[string]interface{} {
+// 	kv.mu.RLock()
+// 	defer kv.mu.RUnlock()
+// 	return kv.walManager.GetWALStats()
+// }
 
 // GetWithTTL 获取键值对及其TTL信息
 func (kv *KV) GetWithTTL(key string) (string, int64, error) {
@@ -353,6 +353,8 @@ func (kv *KV) replayWALFile(walPath string) error {
 		if len(parts) < 2 {
 			continue
 		}
+
+		kv.LastAppliedIndex++ // 每重放一条，递增lastAppliedIndex
 
 		switch parts[0] {
 		case "PUT":
@@ -469,14 +471,13 @@ func (kv *KV) Txn(req *kvpb.TxnRequest) (*kvpb.TxnResponse, error) {
 		ops = req.Failure
 	}
 
-	// 如果有写操作，需要写入WAL
-	if len(ops) > 0 && kv.hasWriteOps(ops) {
-		// 将整个事务作为一条WAL日志写入
-		logEntry := kv.formatTxnToWAL(req, succeeded)
-		if err := kv.walManager.WriteLogEntry(logEntry); err != nil {
-			return nil, fmt.Errorf("failed to write txn to WAL: %v", err)
-		}
-	}
+	// 如果有写操作，需要写入WAL（已由raft层负责，这里不再写WAL）
+	// if len(ops) > 0 && kv.hasWriteOps(ops) {
+	// 	logEntry := kv.formatTxnToWAL(req, succeeded)
+	// 	if err := kv.walManager.WriteEntry(logEntry); err != nil {
+	// 		return nil, fmt.Errorf("failed to write txn to WAL: %v", err)
+	// 	}
+	// }
 
 	// 依次执行操作
 	responses := make([]*kvpb.OpResponse, 0, len(ops))
@@ -583,12 +584,12 @@ func (kv *KV) compareString(a, b string, result kvpb.CompareResult) bool {
 func (kv *KV) applyOp(op *kvpb.Op) *kvpb.OpResponse {
 	switch op.Type {
 	case "PUT":
-		revision, err := kv.store.Put(op.Key, op.Value, op.Ttl)
+		revision, err := kv.store.Put(op.Key, string(op.Value), op.Ttl)
 		if err != nil {
 			return &kvpb.OpResponse{Error: err.Error()}
 		}
 		// 通知Watch监听器
-		kv.watcher.NotifyPut(op.Key, op.Value, revision, op.Ttl)
+		kv.watcher.NotifyPut(op.Key, string(op.Value), revision, op.Ttl)
 		return &kvpb.OpResponse{Key: op.Key, Version: revision}
 
 	case "GET":
@@ -623,12 +624,12 @@ func (kv *KV) GetStats() map[string]interface{} {
 	defer kv.mu.RUnlock()
 
 	stats := kv.store.GetStats()
-	walStats := kv.walManager.GetWALStats()
+	// walStats := kv.walManager.GetWALStats()
 
 	// 合并统计信息
-	for k, v := range walStats {
-		stats[k] = v
-	}
+	// for k, v := range walStats {
+	// 	stats[k] = v
+	// }
 
 	return stats
 }
@@ -678,4 +679,67 @@ func (kv *KV) GetWatchStats() map[string]interface{} {
 // CleanupWatchers 清理已关闭的监听器
 func (kv *KV) CleanupWatchers() {
 	kv.watcher.Cleanup()
+}
+
+// 新增：应用WALEntry到store
+func (kv *KV) ApplyWALEntry(entry *WALEntry) error {
+	// 假设Data为protobuf序列化的kvpb.Op
+	var op kvpb.Op
+	if err := proto.Unmarshal(entry.Data, &op); err != nil {
+		return err
+	}
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+	switch op.Type {
+	case "Put":
+		_, err := kv.store.Put(op.Key, string(op.Value), 0)
+		return err
+	case "PutTTL":
+		_, err := kv.store.Put(op.Key, string(op.Value), op.Ttl)
+		return err
+	case "Del":
+		_, err := kv.store.Delete(op.Key)
+		return err
+	case "Txn":
+		// 反序列化TxnRequest
+		var req kvpb.TxnRequest
+		if err := proto.Unmarshal(op.Value, &req); err != nil {
+			return err
+		}
+		succeeded := op.Ttl == 1 // 约定Ttl==1表示成功分支，否则失败分支
+		var ops []*kvpb.Op
+		if succeeded {
+			ops = req.Success
+		} else {
+			ops = req.Failure
+		}
+		for _, subOp := range ops {
+			kv.applyOp(subOp)
+		}
+		return nil
+	case "Compact":
+		revision, err := strconv.ParseInt(string(op.Value), 10, 64)
+		if err != nil {
+			return err
+		}
+		_, err = kv.store.Compact(revision)
+		return err
+	default:
+		return fmt.Errorf("unknown op type: %s", op.Type)
+	}
+}
+
+// 新增：重放WAL分段
+func (kv *KV) ReplayWALsFrom(fromIdx uint64) error {
+	return kv.walManager.ReplayAllWALs(kv.ApplyWALEntry, fromIdx)
+}
+
+func (kv *KV) GetWALManager() *WALManager {
+	return kv.walManager
+}
+
+// 新增：直接应用TxnRequest对象
+func (kv *KV) ApplyTxnProto(req *kvpb.TxnRequest) error {
+	_, err := kv.Txn(req)
+	return err
 }

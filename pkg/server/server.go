@@ -151,7 +151,7 @@ func handleGetRevRequest(conn net.Conn, key, revStr string, kv *kvstore.KV) {
 
 // handlePutRequest 处理PUT请求
 func handlePutRequest(conn net.Conn, key, value string, rf *raft.Raft) {
-	op := &kvpb.Op{Type: "Put", Key: key, Value: value, Ttl: 0}
+	op := &kvpb.Op{Type: "Put", Key: key, Value: []byte(value), Ttl: 0}
 	data, err := proto.Marshal(op)
 	if err != nil {
 		conn.Write([]byte("ERR marshal failed\n"))
@@ -173,7 +173,7 @@ func handlePutTTLRequest(conn net.Conn, key, value, ttlStr string, rf *raft.Raft
 		return
 	}
 
-	op := &kvpb.Op{Type: "PutTTL", Key: key, Value: value, Ttl: ttl}
+	op := &kvpb.Op{Type: "PutTTL", Key: key, Value: []byte(value), Ttl: ttl}
 	data, err := proto.Marshal(op)
 	if err != nil {
 		conn.Write([]byte("ERR marshal failed\n"))
@@ -309,7 +309,7 @@ func handleCompactRequest(conn net.Conn, b64Data string, kv *kvstore.KV, rf *raf
 	op := &kvpb.Op{
 		Type:  "Compact",
 		Key:   fmt.Sprintf("compact_%d", req.Revision), // 使用key字段存储版本号
-		Value: fmt.Sprintf("%d", req.Revision),
+		Value: []byte(fmt.Sprintf("%d", req.Revision)),
 	}
 	opData, err := proto.Marshal(op)
 	if err != nil {
@@ -381,10 +381,11 @@ func handleTxnRequest(conn net.Conn, b64Data string, kv *kvstore.KV, rf *raft.Ra
 	}
 
 	// 将事务请求包装为Op，通过raft层处理
+	txnBytes, _ := proto.Marshal(&req)
 	op := &kvpb.Op{
 		Type:  "Txn",
-		Key:   "txn",   // 使用固定的key标识事务操作
-		Value: b64Data, // 将原始事务请求数据存储在Value字段
+		Key:   "txn",    // 使用固定的key标识事务操作
+		Value: txnBytes, // 直接存储protobuf序列化内容
 	}
 	opData, err := proto.Marshal(op)
 	if err != nil {

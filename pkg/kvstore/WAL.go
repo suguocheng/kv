@@ -1,182 +1,208 @@
 package kvstore
 
 import (
-	"bufio"
+	"encoding/gob"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
 )
 
-// WALFile 表示一个WAL文件
+type EntryType int
+
+const (
+	EntryNormal EntryType = iota
+	EntryConfChange
+	EntryMeta
+)
+
+type WALEntry struct {
+	Term  uint64
+	Index uint64
+	Type  EntryType
+	Data  []byte
+}
+
 type WALFile struct {
 	file       *os.File
-	writer     *bufio.Writer
+	encoder    *gob.Encoder
 	path       string
-	entries    int // 当前文件中的日志条目数量
-	maxEntries int // 每个WAL文件最大条目数
-
-	startIndex int // 该WAL文件包含的第一个Raft日志索引
-	endIndex   int // 该WAL文件包含的最后一个Raft日志索引（闭区间）
+	entries    int
+	maxEntries int
+	StartIdx   uint64
+	EndIdx     uint64
 }
 
-// WALManager 管理WAL文件
 type WALManager struct {
-	walDir            string
-	walFiles          []*WALFile
-	currentWAL        *WALFile
-	maxEntries        int // 每个WAL文件最大条目数
-	walSeq            int // 下一个WAL文件编号
-	nextRaftIndex     int // 下一个Raft日志索引
-	lastSnapshotIndex int // 最后快照的索引
+	walDir     string
+	walFiles   []*WALFile
+	currentWAL *WALFile
+	maxEntries int
 }
 
-// NewWALManager 创建新的WAL管理器
 func NewWALManager(walDir string, maxEntriesPerFile int) (*WALManager, error) {
 	if err := os.MkdirAll(walDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create WAL directory: %v", err)
 	}
-
-	return &WALManager{
-		walDir:        walDir,
-		maxEntries:    maxEntriesPerFile,
-		walFiles:      make([]*WALFile, 0),
-		walSeq:        0,
-		nextRaftIndex: 1, // 初始Raft日志索引
-	}, nil
-}
-
-// createNewWALFile 创建新的WAL文件
-func (wm *WALManager) createNewWALFile() error {
-	// 找到下一个WAL文件编号
-	nextID := wm.walSeq
-	walPath := filepath.Join(wm.walDir, fmt.Sprintf("wal_%06d.log", nextID))
-	file, err := os.OpenFile(walPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to create WAL file %s: %v", walPath, err)
+	wm := &WALManager{
+		walDir:     walDir,
+		maxEntries: maxEntriesPerFile,
+		walFiles:   make([]*WALFile, 0),
 	}
 
+	// 恢复所有WAL分段
+	files, err := os.ReadDir(walDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read WAL directory: %v", err)
+	}
+	var walFileNames []string
+	for _, f := range files {
+		if !f.IsDir() && strings.HasSuffix(f.Name(), ".wal") {
+			walFileNames = append(walFileNames, f.Name())
+		}
+	}
+	sort.Strings(walFileNames)
+	for _, fname := range walFileNames {
+		walPath := filepath.Join(walDir, fname)
+		file, err := os.OpenFile(walPath, os.O_RDWR|os.O_APPEND, 0644)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open WAL file: %v", err)
+		}
+		encoder := gob.NewEncoder(file)
+		// 解析文件名获取startIdx
+		base := strings.TrimSuffix(fname, ".wal")
+		parts := strings.Split(base, "-")
+		if len(parts) != 2 {
+			file.Close()
+			continue
+		}
+		startIdx, _ := strconv.ParseUint(parts[0], 10, 64)
+		// endIdx, _ := strconv.ParseUint(parts[1], 10, 64) // 不再需要endIdx
+		// 统计实际entries和EndIdx
+		entries := 0
+		actualEndIdx := startIdx - 1
+		file.Seek(0, 0)
+		dec := gob.NewDecoder(file)
+		for {
+			var entry WALEntry
+			err := dec.Decode(&entry)
+			if err != nil {
+				break
+			}
+			entries++
+			actualEndIdx = entry.Index
+		}
+		walFile := &WALFile{
+			file:       file,
+			encoder:    encoder,
+			path:       walPath,
+			entries:    entries,
+			maxEntries: maxEntriesPerFile,
+			StartIdx:   startIdx,
+			EndIdx:     actualEndIdx,
+		}
+		wm.walFiles = append(wm.walFiles, walFile)
+		wm.currentWAL = walFile // 最后一个分段作为currentWAL
+	}
+	return wm, nil
+}
+
+func (wm *WALManager) createNewWALFile(startIdx uint64) error {
+	endIdx := startIdx + uint64(wm.maxEntries) - 1
+	walPath := filepath.Join(wm.walDir, fmt.Sprintf("%d-%d.wal", startIdx, endIdx))
+	file, err := os.OpenFile(walPath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
 	walFile := &WALFile{
 		file:       file,
-		writer:     bufio.NewWriter(file),
+		encoder:    gob.NewEncoder(file),
 		path:       walPath,
 		entries:    0,
 		maxEntries: wm.maxEntries,
-		startIndex: wm.nextRaftIndex,
-		endIndex:   wm.nextRaftIndex - 1,
+		StartIdx:   startIdx,
+		EndIdx:     startIdx - 1, // 实际写入的最大Index
 	}
-
 	wm.walFiles = append(wm.walFiles, walFile)
 	wm.currentWAL = walFile
-	wm.walSeq++        // 递增编号
-	wm.nextRaftIndex++ // 递增Raft日志索引
 	return nil
 }
 
-// WriteLogEntry 写入日志条目
-func (wm *WALManager) WriteLogEntry(entry string) error {
-	// 检查当前WAL文件是否存在且未满
+func (wm *WALManager) WriteEntry(entry *WALEntry) error {
 	if wm.currentWAL == nil || wm.currentWAL.entries >= wm.currentWAL.maxEntries {
-		// 当前WAL文件不存在或已满，创建新文件
-		if err := wm.createNewWALFile(); err != nil {
+		var newStartIdx uint64 = entry.Index
+		if wm.currentWAL != nil {
+			newStartIdx = wm.currentWAL.StartIdx + uint64(wm.currentWAL.maxEntries)
+		}
+		if err := wm.createNewWALFile(newStartIdx); err != nil {
 			return err
 		}
 	}
+	if err := wm.currentWAL.encoder.Encode(entry); err != nil {
+		return err
+	}
+	wm.currentWAL.entries++
+	wm.currentWAL.EndIdx = entry.Index
+	return wm.currentWAL.file.Sync()
+}
 
-	_, err := wm.currentWAL.writer.WriteString(entry + "\n")
+func (wm *WALManager) ReplayAllWALs(apply func(*WALEntry) error, fromIdx uint64) error {
+	files, err := os.ReadDir(wm.walDir)
 	if err != nil {
 		return err
 	}
-
-	if err := wm.currentWAL.writer.Flush(); err != nil {
-		return err
+	var walFiles []string
+	for _, f := range files {
+		if !f.IsDir() && strings.HasSuffix(f.Name(), ".wal") {
+			walFiles = append(walFiles, filepath.Join(wm.walDir, f.Name()))
+		}
 	}
-
-	wm.currentWAL.entries++
-	// 每次写入时，更新endIndex为当前Raft日志索引
-	wm.currentWAL.endIndex = wm.nextRaftIndex
-	wm.nextRaftIndex++
+	sort.Strings(walFiles)
+	for _, walPath := range walFiles {
+		file, err := os.Open(walPath)
+		if err != nil {
+			return err
+		}
+		dec := gob.NewDecoder(file)
+		for {
+			var entry WALEntry
+			err := dec.Decode(&entry)
+			if err != nil {
+				break
+			}
+			if entry.Index >= fromIdx {
+				if err := apply(&entry); err != nil {
+					file.Close()
+					return err
+				}
+			}
+		}
+		file.Close()
+	}
 	return nil
 }
 
-// Close 关闭WAL管理器
-func (wm *WALManager) Close() error {
-	// 刷新当前WAL文件
-	if wm.currentWAL != nil && wm.currentWAL.writer != nil {
-		wm.currentWAL.writer.Flush()
-		wm.currentWAL.file.Close()
-	}
-	return nil
-}
-
-// CleanupWALFiles 清理已快照的WAL文件
-func (wm *WALManager) CleanupWALFiles(snapshotIndex int) error {
-	// 更新最后快照索引
-	wm.lastSnapshotIndex = snapshotIndex
-
-	// 计算每个WAL文件的覆盖范围
+func (wm *WALManager) CleanupWALFiles(snapshotIdx uint64) error {
 	var filesToDelete []string
 	var filesToKeep []*WALFile
-
 	for _, walFile := range wm.walFiles {
-		// 只有endIndex<=snapshotIndex时才删除
-		if walFile.endIndex > 0 && walFile.endIndex <= snapshotIndex {
+		if walFile.EndIdx > 0 && walFile.EndIdx <= snapshotIdx {
 			filesToDelete = append(filesToDelete, walFile.path)
 		} else {
 			filesToKeep = append(filesToKeep, walFile)
 		}
 	}
-
-	// 删除已快照的WAL文件
 	for _, filePath := range filesToDelete {
-		if err := os.Remove(filePath); err != nil {
-			return fmt.Errorf("failed to delete WAL file %s: %v", filePath, err)
-		}
+		os.Remove(filePath)
 	}
-
-	// 更新WAL文件列表，只保留未删除的文件
 	wm.walFiles = filesToKeep
-
-	// 重要：检查当前WAL文件是否被删除，如果是则设置为nil
-	// 这样下次写入时会自动创建新文件
-	if wm.currentWAL != nil {
-		currentWALExists := false
-		for _, walFile := range wm.walFiles {
-			if walFile.path == wm.currentWAL.path {
-				currentWALExists = true
-				break
-			}
-		}
-		if !currentWALExists {
-			wm.currentWAL = nil
-		}
-	}
-
-	// 如果所有WAL文件都被删光了，主动新建一个WAL文件
 	if len(wm.walFiles) == 0 {
-		if err := wm.createNewWALFile(); err != nil {
-			return fmt.Errorf("failed to create new WAL file after cleanup: %v", err)
-		}
+		wm.currentWAL = nil
+		_ = wm.createNewWALFile(snapshotIdx + 1)
+	} else {
+		wm.currentWAL = wm.walFiles[len(wm.walFiles)-1]
 	}
-
 	return nil
-}
-
-// GetWALStats 获取WAL统计信息
-func (wm *WALManager) GetWALStats() map[string]interface{} {
-	totalEntries := 0
-	for _, walFile := range wm.walFiles {
-		totalEntries += walFile.entries
-	}
-
-	currentWALEntries := 0
-	if wm.currentWAL != nil {
-		currentWALEntries = wm.currentWAL.entries
-	}
-
-	return map[string]interface{}{
-		"total_wal_files":      len(wm.walFiles),
-		"total_entries":        totalEntries,
-		"max_entries_per_file": wm.maxEntries,
-		"current_wal_entries":  currentWALEntries,
-	}
 }

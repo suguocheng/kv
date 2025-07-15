@@ -51,7 +51,7 @@ func loadNodeConfig(me int) *NodeConfig {
 		RaftStatePath: fmt.Sprintf("data/node%d/raft-state.pb", me),
 		SnapshotPath:  fmt.Sprintf("data/node%d/snapshot.pb", me),
 		WALDir:        fmt.Sprintf("data/node%d/wal", me),
-		MaxWALEntries: 100, // 每个WAL文件最多100个条目，与快照阈值保持一致
+		MaxWALEntries: 5, // 每个WAL文件最多100个条目，与快照阈值保持一致
 	}
 }
 
@@ -65,7 +65,8 @@ func initKV(walDir string, maxEntries int) *kvstore.KV {
 
 func initRaft(conf *NodeConfig, kv *kvstore.KV) (*raft.Raft, chan raft.ApplyMsg) {
 	applyCh := make(chan raft.ApplyMsg)
-	rf := raft.Make(conf.Me, conf.PeerAddrs, conf.ClientAddr, applyCh, conf.RaftStatePath, conf.SnapshotPath)
+	wm := kv.GetWALManager()
+	rf := raft.Make(conf.Me, conf.PeerAddrs, conf.ClientAddr, applyCh, conf.RaftStatePath, conf.SnapshotPath, wm)
 
 	go startApplyLoop(rf, kv, applyCh)
 
@@ -75,58 +76,55 @@ func initRaft(conf *NodeConfig, kv *kvstore.KV) (*raft.Raft, chan raft.ApplyMsg)
 func startApplyLoop(rf *raft.Raft, kv *kvstore.KV, applyCh chan raft.ApplyMsg) {
 	lastSnapshottedIndex := 0
 	go func() {
+		wm := kv.GetWALManager()
 		for msg := range applyCh {
+			// 2. 反序列化并apply到store
 			if msg.CommandValid {
 				var op kvpb.Op
-				err := proto.Unmarshal(msg.Command, &op)
-				if err != nil {
-					fmt.Println("Failed to decode command:", err)
-					continue
-				}
-
-				switch op.Type {
-				case "Put":
-					kv.Put(op.Key, op.Value)
-				case "PutTTL":
-					kv.PutWithTTL(op.Key, op.Value, op.Ttl)
-				case "Del":
-					kv.Delete(op.Key)
-				case "Compact":
-					// 从value字段解析版本号
-					revision, err := strconv.ParseInt(op.Value, 10, 64)
-					if err != nil {
-						fmt.Printf("Failed to parse compact revision: %v\n", err)
-						continue
+				if err := proto.Unmarshal(msg.Command, &op); err == nil {
+					switch op.Type {
+					case "Put":
+						kv.Put(op.Key, string(op.Value))
+					case "PutTTL":
+						kv.PutWithTTL(op.Key, string(op.Value), op.Ttl)
+					case "Del":
+						kv.Delete(op.Key)
+					case "Compact":
+						revision, err := strconv.ParseInt(string(op.Value), 10, 64)
+						if err != nil {
+							fmt.Printf("Failed to parse compact revision: %v\n", err)
+							continue
+						}
+						_, err = kv.Compact(revision)
+						if err != nil {
+							fmt.Printf("Failed to compact: %v\n", err)
+						}
+					case "Txn":
+						var req kvpb.TxnRequest
+						if err := proto.Unmarshal(op.Value, &req); err == nil {
+							if err := kv.ApplyTxnProto(&req); err != nil {
+								fmt.Printf("Failed to apply transaction: %v\n", err)
+							}
+						} else {
+							fmt.Printf("Failed to decode txn value: %v\n", err)
+						}
+					default:
+						fmt.Println("Unknown Op type:", op.Type)
 					}
-					_, err = kv.Compact(revision)
-					if err != nil {
-						fmt.Printf("Failed to compact: %v\n", err)
-					}
-				case "Txn":
-					// 处理事务操作
-					if err := kv.ApplyTxn(op.Value); err != nil {
-						fmt.Printf("Failed to apply transaction: %v\n", err)
-					}
-				default:
-					fmt.Println("Unknown Op type:", op.Type)
-				}
 
-				// 快照阈值与MaxWALEntries保持一致，方便删除整个WAL文件
-				// 只有当累积的条目数达到阈值时才触发快照
-				if msg.CommandIndex-lastSnapshottedIndex >= 100 {
-					snapshot, _ := kv.SerializeState()
-					rf.Snapshot(msg.CommandIndex, snapshot)
-					lastSnapshottedIndex = msg.CommandIndex
-
-					// 清理已快照的WAL文件
-					if err := kv.CleanupWALFiles(msg.CommandIndex); err != nil {
-						log.DPrintf("Failed to cleanup WAL files: %v\n", err)
-					} else {
-						log.DPrintf("Cleaned up WAL files up to index %d\n", msg.CommandIndex)
+					if msg.CommandIndex%5 == 0 && msg.CommandIndex > lastSnapshottedIndex {
+						snapshot, _ := kv.SerializeState()
+						rf.Snapshot(msg.CommandIndex, snapshot)
+						lastSnapshottedIndex = msg.CommandIndex
+						// 清理已快照的WAL文件
+						if err := wm.CleanupWALFiles(uint64(msg.CommandIndex)); err != nil {
+							log.DPrintf("Failed to cleanup WAL files: %v\n", err)
+						} else {
+							log.DPrintf("Cleaned up WAL files up to index %d\n", msg.CommandIndex)
+						}
 					}
 				}
 			} else if msg.SnapshotValid {
-				// 处理快照安装
 				ok := rf.CondInstallSnapshot(msg.SnapshotTerm, msg.SnapshotIndex, msg.Snapshot)
 				if ok {
 					err := kv.RestoreFromSnapshotData(msg.Snapshot)
@@ -136,6 +134,8 @@ func startApplyLoop(rf *raft.Raft, kv *kvstore.KV, applyCh chan raft.ApplyMsg) {
 						log.DPrintf("Restored state from snapshot at index %d\n", msg.SnapshotIndex)
 					}
 					lastSnapshottedIndex = msg.SnapshotIndex
+					// 恢复后重放快照点后的WAL
+					kv.ReplayWALsFrom(uint64(msg.SnapshotIndex + 1))
 				} else {
 					log.DPrintf("CondInstallSnapshot rejected snapshot at index %d\n", msg.SnapshotIndex)
 				}
