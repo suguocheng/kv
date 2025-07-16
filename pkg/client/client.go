@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json" // Added for json.Unmarshal
 	"fmt"
-	"kv/pkg/kvpb"
+	"kv/pkg/proto/kvpb"
 	"net"
 	"strconv"
 	"strings"

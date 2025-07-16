@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"kv/pkg/client"
-	"kv/pkg/kvpb"
+	"kv/pkg/proto/kvpb"
 	"strconv"
 	"strings"
 )

@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v3.21.12
-// source: pkg/kvpb/watch.proto
+// source: pkg/proto/kvpb/watch.proto
 
 package kvpb
 
@@ -33,7 +33,7 @@ type WatchRequest struct {
 
 func (x *WatchRequest) Reset() {
 	*x = WatchRequest{}
-	mi := &file_pkg_kvpb_watch_proto_msgTypes[0]
+	mi := &file_pkg_proto_kvpb_watch_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +45,7 @@ func (x *WatchRequest) String() string {
 func (*WatchRequest) ProtoMessage() {}
 
 func (x *WatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_kvpb_watch_proto_msgTypes[0]
+	mi := &file_pkg_proto_kvpb_watch_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +58,7 @@ func (x *WatchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WatchRequest.ProtoReflect.Descriptor instead.
 func (*WatchRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_kvpb_watch_proto_rawDescGZIP(), []int{0}
+	return file_pkg_proto_kvpb_watch_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *WatchRequest) GetKey() string {
@@ -94,7 +94,7 @@ type WatchResponse struct {
 
 func (x *WatchResponse) Reset() {
 	*x = WatchResponse{}
-	mi := &file_pkg_kvpb_watch_proto_msgTypes[1]
+	mi := &file_pkg_proto_kvpb_watch_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -106,7 +106,7 @@ func (x *WatchResponse) String() string {
 func (*WatchResponse) ProtoMessage() {}
 
 func (x *WatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_kvpb_watch_proto_msgTypes[1]
+	mi := &file_pkg_proto_kvpb_watch_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -119,7 +119,7 @@ func (x *WatchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WatchResponse.ProtoReflect.Descriptor instead.
 func (*WatchResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_kvpb_watch_proto_rawDescGZIP(), []int{1}
+	return file_pkg_proto_kvpb_watch_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *WatchResponse) GetWatcherId() string {
@@ -158,7 +158,7 @@ type WatchEvent struct {
 
 func (x *WatchEvent) Reset() {
 	*x = WatchEvent{}
-	mi := &file_pkg_kvpb_watch_proto_msgTypes[2]
+	mi := &file_pkg_proto_kvpb_watch_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -170,7 +170,7 @@ func (x *WatchEvent) String() string {
 func (*WatchEvent) ProtoMessage() {}
 
 func (x *WatchEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_kvpb_watch_proto_msgTypes[2]
+	mi := &file_pkg_proto_kvpb_watch_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -183,7 +183,7 @@ func (x *WatchEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WatchEvent.ProtoReflect.Descriptor instead.
 func (*WatchEvent) Descriptor() ([]byte, []int) {
-	return file_pkg_kvpb_watch_proto_rawDescGZIP(), []int{2}
+	return file_pkg_proto_kvpb_watch_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *WatchEvent) GetType() int32 {
@@ -228,11 +228,11 @@ func (x *WatchEvent) GetTtl() int64 {
 	return 0
 }
 
-var File_pkg_kvpb_watch_proto protoreflect.FileDescriptor
+var File_pkg_proto_kvpb_watch_proto protoreflect.FileDescriptor
 
-const file_pkg_kvpb_watch_proto_rawDesc = "" +
+const file_pkg_proto_kvpb_watch_proto_rawDesc = "" +
 	"\n" +
-	"\x14pkg/kvpb/watch.proto\x12\x04kvpb\"W\n" +
+	"\x1apkg/proto/kvpb/watch.proto\x12\x04kvpb\"W\n" +
 	"\fWatchRequest\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x16\n" +
 	"\x06prefix\x18\x02 \x01(\tR\x06prefix\x12\x1d\n" +
@@ -250,27 +250,27 @@ const file_pkg_kvpb_watch_proto_rawDesc = "" +
 	"\x05value\x18\x03 \x01(\tR\x05value\x12\x1a\n" +
 	"\brevision\x18\x04 \x01(\x03R\brevision\x12\x1c\n" +
 	"\ttimestamp\x18\x05 \x01(\x03R\ttimestamp\x12\x10\n" +
-	"\x03ttl\x18\x06 \x01(\x03R\x03ttlB\rZ\vkv/pkg/kvpbb\x06proto3"
+	"\x03ttl\x18\x06 \x01(\x03R\x03ttlB\x13Z\x11kv/proto/pkg/kvpbb\x06proto3"
 
 var (
-	file_pkg_kvpb_watch_proto_rawDescOnce sync.Once
-	file_pkg_kvpb_watch_proto_rawDescData []byte
+	file_pkg_proto_kvpb_watch_proto_rawDescOnce sync.Once
+	file_pkg_proto_kvpb_watch_proto_rawDescData []byte
 )
 
-func file_pkg_kvpb_watch_proto_rawDescGZIP() []byte {
-	file_pkg_kvpb_watch_proto_rawDescOnce.Do(func() {
-		file_pkg_kvpb_watch_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pkg_kvpb_watch_proto_rawDesc), len(file_pkg_kvpb_watch_proto_rawDesc)))
+func file_pkg_proto_kvpb_watch_proto_rawDescGZIP() []byte {
+	file_pkg_proto_kvpb_watch_proto_rawDescOnce.Do(func() {
+		file_pkg_proto_kvpb_watch_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pkg_proto_kvpb_watch_proto_rawDesc), len(file_pkg_proto_kvpb_watch_proto_rawDesc)))
 	})
-	return file_pkg_kvpb_watch_proto_rawDescData
+	return file_pkg_proto_kvpb_watch_proto_rawDescData
 }
 
-var file_pkg_kvpb_watch_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
-var file_pkg_kvpb_watch_proto_goTypes = []any{
+var file_pkg_proto_kvpb_watch_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_pkg_proto_kvpb_watch_proto_goTypes = []any{
 	(*WatchRequest)(nil),  // 0: kvpb.WatchRequest
 	(*WatchResponse)(nil), // 1: kvpb.WatchResponse
 	(*WatchEvent)(nil),    // 2: kvpb.WatchEvent
 }
-var file_pkg_kvpb_watch_proto_depIdxs = []int32{
+var file_pkg_proto_kvpb_watch_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
 	0, // [0:0] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -278,26 +278,26 @@ var file_pkg_kvpb_watch_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_pkg_kvpb_watch_proto_init() }
-func file_pkg_kvpb_watch_proto_init() {
-	if File_pkg_kvpb_watch_proto != nil {
+func init() { file_pkg_proto_kvpb_watch_proto_init() }
+func file_pkg_proto_kvpb_watch_proto_init() {
+	if File_pkg_proto_kvpb_watch_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_kvpb_watch_proto_rawDesc), len(file_pkg_kvpb_watch_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_proto_kvpb_watch_proto_rawDesc), len(file_pkg_proto_kvpb_watch_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_pkg_kvpb_watch_proto_goTypes,
-		DependencyIndexes: file_pkg_kvpb_watch_proto_depIdxs,
-		MessageInfos:      file_pkg_kvpb_watch_proto_msgTypes,
+		GoTypes:           file_pkg_proto_kvpb_watch_proto_goTypes,
+		DependencyIndexes: file_pkg_proto_kvpb_watch_proto_depIdxs,
+		MessageInfos:      file_pkg_proto_kvpb_watch_proto_msgTypes,
 	}.Build()
-	File_pkg_kvpb_watch_proto = out.File
-	file_pkg_kvpb_watch_proto_goTypes = nil
-	file_pkg_kvpb_watch_proto_depIdxs = nil
+	File_pkg_proto_kvpb_watch_proto = out.File
+	file_pkg_proto_kvpb_watch_proto_goTypes = nil
+	file_pkg_proto_kvpb_watch_proto_depIdxs = nil
 }

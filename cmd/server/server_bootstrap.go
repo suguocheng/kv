@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"kv/log"
-	"kv/pkg/kvpb"
 	"kv/pkg/kvstore"
+	"kv/pkg/proto/kvpb"
 	"kv/pkg/raft"
 	"kv/pkg/server"
 	"net"

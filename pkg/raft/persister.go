@@ -3,7 +3,7 @@ package raft
 import (
 	"fmt"
 	"kv/log"
-	"kv/pkg/raftpb"
+	"kv/pkg/proto/raftpb"
 	"os"
 
 	"google.golang.org/protobuf/proto"

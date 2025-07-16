@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package kvpb;
 
-option go_package = "kv/pkg/kvpb";
+option go_package = "kv/proto/pkg/kvpb";
 
-import "pkg/kvpb/op.proto";
+import "pkg/proto/kvpb/op.proto";
 
 // 比较操作类型
 enum CompareResult {

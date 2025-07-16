@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v3.21.12
-// source: pkg/kvpb/mvcc.proto
+// source: pkg/proto/kvpb/mvcc.proto
 
 package kvpb
 
@@ -32,7 +32,7 @@ type Version struct {
 
 func (x *Version) Reset() {
 	*x = Version{}
-	mi := &file_pkg_kvpb_mvcc_proto_msgTypes[0]
+	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -44,7 +44,7 @@ func (x *Version) String() string {
 func (*Version) ProtoMessage() {}
 
 func (x *Version) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_kvpb_mvcc_proto_msgTypes[0]
+	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -57,7 +57,7 @@ func (x *Version) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Version.ProtoReflect.Descriptor instead.
 func (*Version) Descriptor() ([]byte, []int) {
-	return file_pkg_kvpb_mvcc_proto_rawDescGZIP(), []int{0}
+	return file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Version) GetMain() int64 {
@@ -90,7 +90,7 @@ type VersionedKVPair struct {
 
 func (x *VersionedKVPair) Reset() {
 	*x = VersionedKVPair{}
-	mi := &file_pkg_kvpb_mvcc_proto_msgTypes[1]
+	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -102,7 +102,7 @@ func (x *VersionedKVPair) String() string {
 func (*VersionedKVPair) ProtoMessage() {}
 
 func (x *VersionedKVPair) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_kvpb_mvcc_proto_msgTypes[1]
+	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -115,7 +115,7 @@ func (x *VersionedKVPair) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VersionedKVPair.ProtoReflect.Descriptor instead.
 func (*VersionedKVPair) Descriptor() ([]byte, []int) {
-	return file_pkg_kvpb_mvcc_proto_rawDescGZIP(), []int{1}
+	return file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *VersionedKVPair) GetKey() string {
@@ -178,7 +178,7 @@ type MVCCStore struct {
 
 func (x *MVCCStore) Reset() {
 	*x = MVCCStore{}
-	mi := &file_pkg_kvpb_mvcc_proto_msgTypes[2]
+	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -190,7 +190,7 @@ func (x *MVCCStore) String() string {
 func (*MVCCStore) ProtoMessage() {}
 
 func (x *MVCCStore) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_kvpb_mvcc_proto_msgTypes[2]
+	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -203,7 +203,7 @@ func (x *MVCCStore) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MVCCStore.ProtoReflect.Descriptor instead.
 func (*MVCCStore) Descriptor() ([]byte, []int) {
-	return file_pkg_kvpb_mvcc_proto_rawDescGZIP(), []int{2}
+	return file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *MVCCStore) GetPairs() []*VersionedKVPair {
@@ -235,7 +235,7 @@ type RangeRequest struct {
 
 func (x *RangeRequest) Reset() {
 	*x = RangeRequest{}
-	mi := &file_pkg_kvpb_mvcc_proto_msgTypes[3]
+	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -247,7 +247,7 @@ func (x *RangeRequest) String() string {
 func (*RangeRequest) ProtoMessage() {}
 
 func (x *RangeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_kvpb_mvcc_proto_msgTypes[3]
+	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -260,7 +260,7 @@ func (x *RangeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RangeRequest.ProtoReflect.Descriptor instead.
 func (*RangeRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_kvpb_mvcc_proto_rawDescGZIP(), []int{3}
+	return file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *RangeRequest) GetKey() string {
@@ -318,7 +318,7 @@ type RangeResponse struct {
 
 func (x *RangeResponse) Reset() {
 	*x = RangeResponse{}
-	mi := &file_pkg_kvpb_mvcc_proto_msgTypes[4]
+	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -330,7 +330,7 @@ func (x *RangeResponse) String() string {
 func (*RangeResponse) ProtoMessage() {}
 
 func (x *RangeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_kvpb_mvcc_proto_msgTypes[4]
+	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -343,7 +343,7 @@ func (x *RangeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RangeResponse.ProtoReflect.Descriptor instead.
 func (*RangeResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_kvpb_mvcc_proto_rawDescGZIP(), []int{4}
+	return file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *RangeResponse) GetKvs() []*VersionedKVPair {
@@ -386,7 +386,7 @@ type HistoryRequest struct {
 
 func (x *HistoryRequest) Reset() {
 	*x = HistoryRequest{}
-	mi := &file_pkg_kvpb_mvcc_proto_msgTypes[5]
+	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -398,7 +398,7 @@ func (x *HistoryRequest) String() string {
 func (*HistoryRequest) ProtoMessage() {}
 
 func (x *HistoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_kvpb_mvcc_proto_msgTypes[5]
+	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -411,7 +411,7 @@ func (x *HistoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HistoryRequest.ProtoReflect.Descriptor instead.
 func (*HistoryRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_kvpb_mvcc_proto_rawDescGZIP(), []int{5}
+	return file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *HistoryRequest) GetKey() string {
@@ -446,7 +446,7 @@ type HistoryResponse struct {
 
 func (x *HistoryResponse) Reset() {
 	*x = HistoryResponse{}
-	mi := &file_pkg_kvpb_mvcc_proto_msgTypes[6]
+	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -458,7 +458,7 @@ func (x *HistoryResponse) String() string {
 func (*HistoryResponse) ProtoMessage() {}
 
 func (x *HistoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_kvpb_mvcc_proto_msgTypes[6]
+	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -471,7 +471,7 @@ func (x *HistoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HistoryResponse.ProtoReflect.Descriptor instead.
 func (*HistoryResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_kvpb_mvcc_proto_rawDescGZIP(), []int{6}
+	return file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *HistoryResponse) GetHistory() []*VersionedKVPair {
@@ -499,7 +499,7 @@ type CompactRequest struct {
 
 func (x *CompactRequest) Reset() {
 	*x = CompactRequest{}
-	mi := &file_pkg_kvpb_mvcc_proto_msgTypes[7]
+	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -511,7 +511,7 @@ func (x *CompactRequest) String() string {
 func (*CompactRequest) ProtoMessage() {}
 
 func (x *CompactRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_kvpb_mvcc_proto_msgTypes[7]
+	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -524,7 +524,7 @@ func (x *CompactRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompactRequest.ProtoReflect.Descriptor instead.
 func (*CompactRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_kvpb_mvcc_proto_rawDescGZIP(), []int{7}
+	return file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CompactRequest) GetRevision() int64 {
@@ -552,7 +552,7 @@ type CompactResponse struct {
 
 func (x *CompactResponse) Reset() {
 	*x = CompactResponse{}
-	mi := &file_pkg_kvpb_mvcc_proto_msgTypes[8]
+	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -564,7 +564,7 @@ func (x *CompactResponse) String() string {
 func (*CompactResponse) ProtoMessage() {}
 
 func (x *CompactResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_kvpb_mvcc_proto_msgTypes[8]
+	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -577,7 +577,7 @@ func (x *CompactResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompactResponse.ProtoReflect.Descriptor instead.
 func (*CompactResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_kvpb_mvcc_proto_rawDescGZIP(), []int{8}
+	return file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *CompactResponse) GetRevision() int64 {
@@ -594,11 +594,11 @@ func (x *CompactResponse) GetCompacted() int64 {
 	return 0
 }
 
-var File_pkg_kvpb_mvcc_proto protoreflect.FileDescriptor
+var File_pkg_proto_kvpb_mvcc_proto protoreflect.FileDescriptor
 
-const file_pkg_kvpb_mvcc_proto_rawDesc = "" +
+const file_pkg_proto_kvpb_mvcc_proto_rawDesc = "" +
 	"\n" +
-	"\x13pkg/kvpb/mvcc.proto\x12\x04kvpb\"/\n" +
+	"\x19pkg/proto/kvpb/mvcc.proto\x12\x04kvpb\"/\n" +
 	"\aVersion\x12\x12\n" +
 	"\x04main\x18\x01 \x01(\x03R\x04main\x12\x10\n" +
 	"\x03sub\x18\x02 \x01(\x03R\x03sub\"\xcd\x01\n" +
@@ -638,22 +638,22 @@ const file_pkg_kvpb_mvcc_proto_rawDesc = "" +
 	"\bphysical\x18\x02 \x01(\bR\bphysical\"K\n" +
 	"\x0fCompactResponse\x12\x1a\n" +
 	"\brevision\x18\x01 \x01(\x03R\brevision\x12\x1c\n" +
-	"\tcompacted\x18\x02 \x01(\x03R\tcompactedB\rZ\vkv/pkg/kvpbb\x06proto3"
+	"\tcompacted\x18\x02 \x01(\x03R\tcompactedB\x13Z\x11kv/proto/pkg/kvpbb\x06proto3"
 
 var (
-	file_pkg_kvpb_mvcc_proto_rawDescOnce sync.Once
-	file_pkg_kvpb_mvcc_proto_rawDescData []byte
+	file_pkg_proto_kvpb_mvcc_proto_rawDescOnce sync.Once
+	file_pkg_proto_kvpb_mvcc_proto_rawDescData []byte
 )
 
-func file_pkg_kvpb_mvcc_proto_rawDescGZIP() []byte {
-	file_pkg_kvpb_mvcc_proto_rawDescOnce.Do(func() {
-		file_pkg_kvpb_mvcc_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pkg_kvpb_mvcc_proto_rawDesc), len(file_pkg_kvpb_mvcc_proto_rawDesc)))
+func file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP() []byte {
+	file_pkg_proto_kvpb_mvcc_proto_rawDescOnce.Do(func() {
+		file_pkg_proto_kvpb_mvcc_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pkg_proto_kvpb_mvcc_proto_rawDesc), len(file_pkg_proto_kvpb_mvcc_proto_rawDesc)))
 	})
-	return file_pkg_kvpb_mvcc_proto_rawDescData
+	return file_pkg_proto_kvpb_mvcc_proto_rawDescData
 }
 
-var file_pkg_kvpb_mvcc_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
-var file_pkg_kvpb_mvcc_proto_goTypes = []any{
+var file_pkg_proto_kvpb_mvcc_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_pkg_proto_kvpb_mvcc_proto_goTypes = []any{
 	(*Version)(nil),         // 0: kvpb.Version
 	(*VersionedKVPair)(nil), // 1: kvpb.VersionedKVPair
 	(*MVCCStore)(nil),       // 2: kvpb.MVCCStore
@@ -664,7 +664,7 @@ var file_pkg_kvpb_mvcc_proto_goTypes = []any{
 	(*CompactRequest)(nil),  // 7: kvpb.CompactRequest
 	(*CompactResponse)(nil), // 8: kvpb.CompactResponse
 }
-var file_pkg_kvpb_mvcc_proto_depIdxs = []int32{
+var file_pkg_proto_kvpb_mvcc_proto_depIdxs = []int32{
 	1, // 0: kvpb.MVCCStore.pairs:type_name -> kvpb.VersionedKVPair
 	1, // 1: kvpb.RangeResponse.kvs:type_name -> kvpb.VersionedKVPair
 	1, // 2: kvpb.HistoryResponse.history:type_name -> kvpb.VersionedKVPair
@@ -675,26 +675,26 @@ var file_pkg_kvpb_mvcc_proto_depIdxs = []int32{
 	0, // [0:3] is the sub-list for field type_name
 }
 
-func init() { file_pkg_kvpb_mvcc_proto_init() }
-func file_pkg_kvpb_mvcc_proto_init() {
-	if File_pkg_kvpb_mvcc_proto != nil {
+func init() { file_pkg_proto_kvpb_mvcc_proto_init() }
+func file_pkg_proto_kvpb_mvcc_proto_init() {
+	if File_pkg_proto_kvpb_mvcc_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_kvpb_mvcc_proto_rawDesc), len(file_pkg_kvpb_mvcc_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_proto_kvpb_mvcc_proto_rawDesc), len(file_pkg_proto_kvpb_mvcc_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_pkg_kvpb_mvcc_proto_goTypes,
-		DependencyIndexes: file_pkg_kvpb_mvcc_proto_depIdxs,
-		MessageInfos:      file_pkg_kvpb_mvcc_proto_msgTypes,
+		GoTypes:           file_pkg_proto_kvpb_mvcc_proto_goTypes,
+		DependencyIndexes: file_pkg_proto_kvpb_mvcc_proto_depIdxs,
+		MessageInfos:      file_pkg_proto_kvpb_mvcc_proto_msgTypes,
 	}.Build()
-	File_pkg_kvpb_mvcc_proto = out.File
-	file_pkg_kvpb_mvcc_proto_goTypes = nil
-	file_pkg_kvpb_mvcc_proto_depIdxs = nil
+	File_pkg_proto_kvpb_mvcc_proto = out.File
+	file_pkg_proto_kvpb_mvcc_proto_goTypes = nil
+	file_pkg_proto_kvpb_mvcc_proto_depIdxs = nil
 }

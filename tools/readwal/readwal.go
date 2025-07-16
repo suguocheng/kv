@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"kv/pkg/kvpb"
+	"kv/pkg/proto/kvpb"
 	"os"
 
 	"google.golang.org/protobuf/proto"

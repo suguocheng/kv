@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"kv/pkg/kvpb"
+	"kv/pkg/proto/kvpb"
 
 	"google.golang.org/protobuf/proto"
 )

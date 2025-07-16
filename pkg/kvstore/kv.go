@@ -3,7 +3,7 @@ package kvstore
 import (
 	"encoding/base64"
 	"fmt"
-	"kv/pkg/kvpb"
+	"kv/pkg/proto/kvpb"
 	"kv/pkg/watch"
 	"os"
 	"path/filepath"

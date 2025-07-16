@@ -3,13 +3,15 @@ package raft
 import (
 	"kv/log"
 	"net"
-	"net/rpc"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"kv/pkg/kvpb"
 	"kv/pkg/kvstore"
+	"kv/pkg/proto/kvpb"
+	"kv/pkg/proto/raftpb"
+
+	"google.golang.org/grpc"
 )
 
 type LogEntry struct {
@@ -33,27 +35,28 @@ type ApplyMsg struct {
 
 // A Go object implementing a single Raft peer.
 type Raft struct {
-	mu             sync.RWMutex
-	peers          map[int]*rpc.Client
-	peerAddrs      map[int]string
-	statePath      string
-	snapshotPath   string
-	me             int
-	dead           int32
-	currentTerm    int
-	voteFor        int
-	logs           []LogEntry
-	commitIndex    int
-	lastApplied    int
-	state          string
-	nextIndex      []int
-	matchIndex     []int
-	electionTimer  *time.Timer
-	heartbeatTimer *time.Timer
-	applyCh        chan ApplyMsg
-	applyCond      *sync.Cond
-	replicatorCond []*sync.Cond
-	walManager     *kvstore.WALManager // 新增：WAL管理器
+	mu                                    sync.RWMutex
+	peers                                 map[int]raftpb.RaftServiceClient
+	peerAddrs                             map[int]string
+	statePath                             string
+	snapshotPath                          string
+	me                                    int
+	dead                                  int32
+	currentTerm                           int
+	voteFor                               int
+	logs                                  []LogEntry
+	commitIndex                           int
+	lastApplied                           int
+	state                                 string
+	nextIndex                             []int
+	matchIndex                            []int
+	electionTimer                         *time.Timer
+	heartbeatTimer                        *time.Timer
+	applyCh                               chan ApplyMsg
+	applyCond                             *sync.Cond
+	replicatorCond                        []*sync.Cond
+	walManager                            *kvstore.WALManager // 新增：WAL管理器
+	raftpb.UnimplementedRaftServiceServer                     // gRPC服务端接口嵌入
 }
 
 // return currentTerm and whether this server
@@ -74,21 +77,24 @@ func (rf *Raft) Start(command []byte) (int, int, bool) {
 	log.DPrintf("server %d, Term %d, Starting command: %v", rf.me, rf.currentTerm, command)
 
 	if isLeader {
-		rf.logs = append(rf.logs, LogEntry{
+		logEntry := LogEntry{
 			Command: command,
 			Term:    rf.currentTerm,
 			Index:   index,
-		})
-		// 新增：写入WAL
-		if rf.walManager != nil {
-			entry := &kvpb.WALEntry{
-				Term:  uint64(rf.currentTerm),
-				Index: uint64(index),
-				Type:  kvpb.EntryType_ENTRY_NORMAL,
-				Data:  command,
-			}
-			rf.walManager.WriteEntry(entry)
 		}
+		walEntry := &kvpb.WALEntry{
+			Term:  uint64(rf.currentTerm),
+			Index: uint64(index),
+			Type:  kvpb.EntryType_ENTRY_NORMAL,
+			Data:  command,
+		}
+		if rf.walManager != nil {
+			if err := rf.walManager.WriteEntry(walEntry); err != nil {
+				log.DPrintf("WAL 写入失败，拒绝追加日志: %v", err)
+				return -1, rf.currentTerm, false
+			}
+		}
+		rf.logs = append(rf.logs, logEntry)
 		rf.persist()
 		rf.nextIndex[rf.me] = index + 1
 		rf.matchIndex[rf.me] = index
@@ -151,22 +157,22 @@ func (rf *Raft) broadcastAppendEntries(i int) {
 
 	if prevLogIndex < rf.getFirstLog().Index {
 		firstLog := rf.getFirstLog()
-		args := &InstallSnapshotArgs{
-			Term:              rf.currentTerm,
-			LeaderId:          rf.me,
-			LastIncludedIndex: firstLog.Index,
-			LastIncludedTerm:  firstLog.Term,
+		args := &raftpb.InstallSnapshotArgs{
+			Term:              int32(rf.currentTerm),
+			LeaderId:          int32(rf.me),
+			LastIncludedIndex: int32(firstLog.Index),
+			LastIncludedTerm:  int32(firstLog.Term),
 			Data:              rf.ReadSnapshot(),
 		}
 		rf.mu.RUnlock()
 
-		reply := new(InstallSnapshotReply)
+		reply := new(raftpb.InstallSnapshotReply)
 
 		if rf.sendInstallSnapshot(i, args, reply) {
 			rf.mu.Lock()
-			if rf.state == "Leader" && rf.currentTerm == args.Term {
-				if reply.Term > rf.currentTerm {
-					rf.currentTerm = reply.Term
+			if rf.state == "Leader" && rf.currentTerm == int(args.Term) {
+				if int(reply.Term) > rf.currentTerm {
+					rf.currentTerm = int(reply.Term)
 					rf.state = "Follower"
 					rf.voteFor = -1
 					rf.persist()
@@ -174,8 +180,8 @@ func (rf *Raft) broadcastAppendEntries(i int) {
 					rf.heartbeatTimer.Stop()
 
 				} else {
-					rf.nextIndex[i] = args.LastIncludedIndex + 1
-					rf.matchIndex[i] = args.LastIncludedIndex
+					rf.nextIndex[i] = int(args.LastIncludedIndex) + 1
+					rf.matchIndex[i] = int(args.LastIncludedIndex)
 					rf.replicatorCond[i].Signal()
 				}
 			}
@@ -189,28 +195,35 @@ func (rf *Raft) broadcastAppendEntries(i int) {
 		entries = make([]LogEntry, len(rf.logs[prevLogIndex-rf.getFirstLog().Index+1:]))
 		copy(entries, rf.logs[prevLogIndex-rf.getFirstLog().Index+1:])
 
-		args := AppendEntriesArgs{
-			Term:         term,
-			LeaderId:     rf.me,
-			PrevLogIndex: prevLogIndex,
-			PrevLogTerm:  prevLogTerm,
-			Entries:      entries,
-			LeaderCommit: rf.commitIndex,
+		args := raftpb.AppendEntriesArgs{
+			Term:         int32(term),
+			LeaderId:     int32(rf.me),
+			PrevLogIndex: int32(prevLogIndex),
+			PrevLogTerm:  int32(prevLogTerm),
+			Entries:      make([]*raftpb.LogEntry, len(entries)),
+			LeaderCommit: int32(rf.commitIndex),
+		}
+		for j := range entries {
+			args.Entries[j] = &raftpb.LogEntry{
+				Command: entries[j].Command,
+				Term:    int32(entries[j].Term),
+				Index:   int32(entries[j].Index),
+			}
 		}
 		rf.mu.RUnlock()
 
 		log.DPrintf("Leader %d sending AppendEntries to Follower %d: PrevLogIndex=%d, Entries=%v LeaderCommit=%d",
 			rf.me, i, args.PrevLogIndex, args.Entries, args.LeaderCommit)
 
-		reply := AppendEntriesReply{}
+		reply := raftpb.AppendEntriesReply{}
 
 		if rf.sendAppendEntries(i, &args, &reply) {
 			rf.mu.Lock()
-			if reply.Term > rf.currentTerm {
+			if int(reply.Term) > rf.currentTerm {
 				log.DPrintf("Leader %d sees higher term from Follower %d: Term %d", rf.me, i, reply.Term)
 
 				// rf.logs = rf.logs[:len(rf.logs)-1]
-				rf.currentTerm = reply.Term
+				rf.currentTerm = int(reply.Term)
 				rf.state = "Follower"
 				rf.voteFor = -1
 				rf.persist()
@@ -221,9 +234,9 @@ func (rf *Raft) broadcastAppendEntries(i int) {
 				return
 			} else {
 				if reply.Success {
-					match := args.PrevLogIndex + len(args.Entries)
-					rf.matchIndex[i] = match
-					rf.nextIndex[i] = match + 1
+					match := args.PrevLogIndex + int32(len(args.Entries))
+					rf.matchIndex[i] = int(match)
+					rf.nextIndex[i] = int(match) + 1
 					log.DPrintf("Follower %d successfully replicated log, nextIndex=%d", i, rf.nextIndex[i])
 					rf.updateCommitIndex()
 					rf.mu.Unlock()
@@ -240,9 +253,9 @@ func (rf *Raft) broadcastAppendEntries(i int) {
 
 					if reply.XTerm == -1 {
 						// Follower 日志过短
-						rf.nextIndex[i] = reply.XLen
+						rf.nextIndex[i] = int(reply.XLen)
 					} else {
-						rf.nextIndex[i] = reply.XIndex
+						rf.nextIndex[i] = int(reply.XIndex)
 					}
 
 					rf.nextIndex[i] = Max(rf.nextIndex[i], 1)
@@ -350,11 +363,11 @@ func (rf *Raft) startElection() {
 	rf.persist()
 
 	voteCount := 1
-	args := RequestVoteArgs{
-		Term:         rf.currentTerm,
-		CandidateId:  rf.me,
-		LastLogIndex: rf.getLastLog().Index,
-		LastLogTerm:  rf.getLastLog().Term,
+	args := raftpb.RequestVoteArgs{
+		Term:         int32(rf.currentTerm),
+		CandidateId:  int32(rf.me),
+		LastLogIndex: int32(rf.getLastLog().Index),
+		LastLogTerm:  int32(rf.getLastLog().Term),
 	}
 	rf.mu.Unlock()
 	for index := range rf.peers {
@@ -370,7 +383,7 @@ func (rf *Raft) startElection() {
 			}
 			rf.mu.Unlock()
 
-			reply := RequestVoteReply{}
+			reply := raftpb.RequestVoteReply{}
 			if rf.sendRequestVote(i, &args, &reply) {
 				rf.mu.Lock()
 
@@ -393,8 +406,8 @@ func (rf *Raft) startElection() {
 						}
 					}
 				} else {
-					if reply.Term > rf.currentTerm {
-						rf.currentTerm = reply.Term
+					if int(reply.Term) > rf.currentTerm {
+						rf.currentTerm = int(reply.Term)
 						rf.state = "Follower"
 						rf.voteFor = -1
 						rf.persist()
@@ -412,33 +425,23 @@ func (rf *Raft) startElection() {
 	// }
 }
 
-// connectToPeers 连接所有其他Raft节点
-func (rf *Raft) connectToPeers() {
-	rf.peers = make(map[int]*rpc.Client)
+// gRPC 连接所有其他 Raft 节点
+func (rf *Raft) connectToPeersGRPC() {
+	rf.peers = make(map[int]raftpb.RaftServiceClient)
 	for id, addr := range rf.peerAddrs {
 		if id == rf.me {
 			continue
 		}
 		go func(id int, addr string) {
 			for {
-				client, err := rpc.Dial("tcp", addr)
+				conn, err := grpc.Dial(addr, grpc.WithInsecure())
 				if err == nil {
+					client := raftpb.NewRaftServiceClient(conn)
 					rf.mu.Lock()
 					rf.peers[id] = client
 					rf.mu.Unlock()
-					log.Printf("连接%d号节点成功", id)
-					// 进入连接保活循环
-					for {
-						pingErr := client.Call("Raft.Ping", struct{}{}, &struct{}{})
-						if pingErr != nil {
-							log.Printf("与%d号节点连接断开,重试...", id)
-							rf.mu.Lock()
-							delete(rf.peers, id)
-							rf.mu.Unlock()
-							break // 跳出内层，重新Dial
-						}
-						time.Sleep(2 * time.Second)
-					}
+					log.Printf("gRPC连接%d号节点成功", id)
+					return // gRPC 长连接，无需保活循环
 				}
 				time.Sleep(1 * time.Second)
 			}
@@ -473,25 +476,8 @@ func Make(me int, peerAddrs map[int]string, myAddr string, applyCh chan ApplyMsg
 	rf.readPersist()
 	rf.applyCond = sync.NewCond(&rf.mu)
 
-	// 启动本地 RPC 监听
-	go func() {
-		rpc.Register(rf)
-		raftAddr := peerAddrs[me] // 使用 Raft 通信端口（如8000）
-		ln, err := net.Listen("tcp", raftAddr)
-		if err != nil {
-			log.DPrintf("Raft %d listen error: %v", me, err)
-			return // 监听失败直接退出，避免nil指针panic
-		}
-		for {
-			conn, err := ln.Accept()
-			if err == nil {
-				go rpc.ServeConn(conn)
-			}
-		}
-	}()
-
 	// 连接所有其他节点
-	rf.connectToPeers()
+	rf.connectToPeersGRPC()
 
 	// 启动各种协程
 	for id, _ := range peerAddrs {
@@ -527,4 +513,15 @@ func (rf *Raft) WaitForIndex(index int, timeout time.Duration) bool {
 		time.Sleep(10 * time.Millisecond)
 	}
 	return false
+}
+
+// ServeGRPC 启动 gRPC 服务端
+func (rf *Raft) ServeGRPC(addr string) error {
+	lis, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+	s := grpc.NewServer()
+	raftpb.RegisterRaftServiceServer(s, rf)
+	return s.Serve(lis)
 }

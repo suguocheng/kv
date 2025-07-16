@@ -1,5 +1,24 @@
+2025/07/16 21:16:52 raft.go:443: gRPC连接1号节点成功
 Listening on localhost:9000
-2025/07/16 17:15:51 raft.go:429: 连接1号节点成功
-2025/07/16 17:15:51 raft.go:429: 连接2号节点成功
-2025/07/16 17:15:55 raft.go:434: 与2号节点连接断开,重试...
-2025/07/16 17:15:55 raft.go:434: 与1号节点连接断开,重试...
+2025/07/16 21:16:52 raft.go:443: gRPC连接2号节点成功
+2025/07/16 21:16:54 rpc.go:200: gRPC AppendEntries to 2 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8002: connect: connection refused"
+2025/07/16 21:16:54 rpc.go:200: gRPC AppendEntries to 2 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8002: connect: connection refused"
+2025/07/16 21:16:54 rpc.go:200: gRPC AppendEntries to 2 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8002: connect: connection refused"
+2025/07/16 21:16:55 rpc.go:200: gRPC AppendEntries to 2 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8002: connect: connection refused"
+2025/07/16 21:16:55 rpc.go:200: gRPC AppendEntries to 2 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8002: connect: connection refused"
+2025/07/16 21:16:55 rpc.go:200: gRPC AppendEntries to 2 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8002: connect: connection refused"
+2025/07/16 21:16:55 rpc.go:200: gRPC AppendEntries to 2 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8002: connect: connection refused"
+2025/07/16 21:16:55 rpc.go:200: gRPC AppendEntries to 2 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8002: connect: connection refused"
+2025/07/16 21:16:55 rpc.go:200: gRPC AppendEntries to 2 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8002: connect: connection refused"
+2025/07/16 21:16:55 rpc.go:200: gRPC AppendEntries to 2 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8002: connect: connection refused"
+2025/07/16 21:16:55 rpc.go:200: gRPC AppendEntries to 2 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8002: connect: connection refused"
+2025/07/16 21:16:56 rpc.go:200: gRPC AppendEntries to 2 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8002: connect: connection refused"
+2025/07/16 21:16:56 rpc.go:200: gRPC AppendEntries to 1 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8001: connect: connection refused"
+2025/07/16 21:16:56 rpc.go:200: gRPC AppendEntries to 2 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8002: connect: connection refused"
+2025/07/16 21:16:56 rpc.go:200: gRPC AppendEntries to 1 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8001: connect: connection refused"
+2025/07/16 21:16:56 rpc.go:200: gRPC AppendEntries to 2 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8002: connect: connection refused"
+2025/07/16 21:16:56 rpc.go:200: gRPC AppendEntries to 1 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8001: connect: connection refused"
+2025/07/16 21:16:56 rpc.go:200: gRPC AppendEntries to 1 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8001: connect: connection refused"
+2025/07/16 21:16:56 rpc.go:200: gRPC AppendEntries to 2 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8002: connect: connection refused"
+2025/07/16 21:16:56 rpc.go:200: gRPC AppendEntries to 1 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8001: connect: connection refused"
+2025/07/16 21:16:56 rpc.go:200: gRPC AppendEntries to 2 failed: rpc error: code = Unavailable desc = connection error: desc = "transport: Error while dialing: dial tcp 127.0.0.1:8002: connect: connection refused"
