@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"kv/pkg/kvpb"
 	"kv/pkg/kvstore"
 )
 
@@ -80,10 +81,10 @@ func (rf *Raft) Start(command []byte) (int, int, bool) {
 		})
 		// 新增：写入WAL
 		if rf.walManager != nil {
-			entry := &kvstore.WALEntry{
+			entry := &kvpb.WALEntry{
 				Term:  uint64(rf.currentTerm),
 				Index: uint64(index),
-				Type:  kvstore.EntryNormal,
+				Type:  kvpb.EntryType_ENTRY_NORMAL,
 				Data:  command,
 			}
 			rf.walManager.WriteEntry(entry)

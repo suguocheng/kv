@@ -292,8 +292,19 @@ func handleRangeRequest(conn net.Conn, b64Data string, kv *kvstore.KV) {
 }
 
 // handleCompactRequest 处理压缩请求
-func handleCompactRequest(conn net.Conn, b64Data string, kv *kvstore.KV, rf *raft.Raft) {
-	data, err := base64.StdEncoding.DecodeString(b64Data)
+func handleCompactRequest(conn net.Conn, arg string, kv *kvstore.KV, rf *raft.Raft) {
+	// 先尝试直接解析为数字
+	if rev, err := strconv.ParseInt(arg, 10, 64); err == nil {
+		// 构造 CompactRequest
+		req := &kvpb.CompactRequest{Revision: rev, Physical: true}
+		data, _ := proto.Marshal(req)
+		b64 := base64.StdEncoding.EncodeToString(data)
+		// 递归调用自己，走原有逻辑
+		handleCompactRequest(conn, b64, kv, rf)
+		return
+	}
+	// 否则走原有base64解码逻辑
+	data, err := base64.StdEncoding.DecodeString(arg)
 	if err != nil {
 		conn.Write([]byte("ERR compact base64 decode failed\n"))
 		return
@@ -318,14 +329,12 @@ func handleCompactRequest(conn net.Conn, b64Data string, kv *kvstore.KV, rf *raf
 	}
 
 	_, _, isLeader := rf.Start(opData)
-	if isLeader {
-		conn.Write([]byte("OK\n"))
-	} else {
+	if !isLeader {
 		conn.Write([]byte("Not_Leader\n"))
 		return
 	}
 
-	// 对于读操作，直接返回结果
+	// 直接返回protobuf响应（无须再写OK）
 	compactedRev, err := kv.Compact(req.Revision)
 	if err != nil {
 		conn.Write([]byte("ERR compact failed\n"))
@@ -386,6 +395,7 @@ func handleTxnRequest(conn net.Conn, b64Data string, kv *kvstore.KV, rf *raft.Ra
 		Type:  "Txn",
 		Key:   "txn",    // 使用固定的key标识事务操作
 		Value: txnBytes, // 直接存储protobuf序列化内容
+		Ttl:   1,        // 关键！加上这一行，保证重放时走Success分支
 	}
 	opData, err := proto.Marshal(op)
 	if err != nil {

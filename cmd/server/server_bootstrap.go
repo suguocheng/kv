@@ -135,6 +135,7 @@ func startApplyLoop(rf *raft.Raft, kv *kvstore.KV, applyCh chan raft.ApplyMsg) {
 					}
 					lastSnapshottedIndex = msg.SnapshotIndex
 					// 恢复后重放快照点后的WAL
+					fmt.Printf("[BOOT] CondInstallSnapshot后，开始ReplayWALsFrom(%d)\n", msg.SnapshotIndex+1)
 					kv.ReplayWALsFrom(uint64(msg.SnapshotIndex + 1))
 				} else {
 					log.DPrintf("CondInstallSnapshot rejected snapshot at index %d\n", msg.SnapshotIndex)

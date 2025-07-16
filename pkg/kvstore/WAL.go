@@ -1,13 +1,17 @@
 package kvstore
 
 import (
-	"encoding/gob"
+	"encoding/binary"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+
+	"kv/pkg/kvpb"
+
+	"google.golang.org/protobuf/proto"
 )
 
 type EntryType int
@@ -18,16 +22,8 @@ const (
 	EntryMeta
 )
 
-type WALEntry struct {
-	Term  uint64
-	Index uint64
-	Type  EntryType
-	Data  []byte
-}
-
 type WALFile struct {
 	file       *os.File
-	encoder    *gob.Encoder
 	path       string
 	entries    int
 	maxEntries int
@@ -70,7 +66,6 @@ func NewWALManager(walDir string, maxEntriesPerFile int) (*WALManager, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to open WAL file: %v", err)
 		}
-		encoder := gob.NewEncoder(file)
 		// 解析文件名获取startIdx
 		base := strings.TrimSuffix(fname, ".wal")
 		parts := strings.Split(base, "-")
@@ -79,16 +74,24 @@ func NewWALManager(walDir string, maxEntriesPerFile int) (*WALManager, error) {
 			continue
 		}
 		startIdx, _ := strconv.ParseUint(parts[0], 10, 64)
-		// endIdx, _ := strconv.ParseUint(parts[1], 10, 64) // 不再需要endIdx
 		// 统计实际entries和EndIdx
 		entries := 0
 		actualEndIdx := startIdx - 1
 		file.Seek(0, 0)
-		dec := gob.NewDecoder(file)
 		for {
-			var entry WALEntry
-			err := dec.Decode(&entry)
+			var lenBuf [4]byte
+			_, err := file.Read(lenBuf[:])
 			if err != nil {
+				break
+			}
+			msgLen := binary.BigEndian.Uint32(lenBuf[:])
+			msgBuf := make([]byte, msgLen)
+			_, err = file.Read(msgBuf)
+			if err != nil {
+				break
+			}
+			var entry kvpb.WALEntry
+			if err := proto.Unmarshal(msgBuf, &entry); err != nil {
 				break
 			}
 			entries++
@@ -96,7 +99,6 @@ func NewWALManager(walDir string, maxEntriesPerFile int) (*WALManager, error) {
 		}
 		walFile := &WALFile{
 			file:       file,
-			encoder:    encoder,
 			path:       walPath,
 			entries:    entries,
 			maxEntries: maxEntriesPerFile,
@@ -118,7 +120,6 @@ func (wm *WALManager) createNewWALFile(startIdx uint64) error {
 	}
 	walFile := &WALFile{
 		file:       file,
-		encoder:    gob.NewEncoder(file),
 		path:       walPath,
 		entries:    0,
 		maxEntries: wm.maxEntries,
@@ -130,7 +131,7 @@ func (wm *WALManager) createNewWALFile(startIdx uint64) error {
 	return nil
 }
 
-func (wm *WALManager) WriteEntry(entry *WALEntry) error {
+func (wm *WALManager) WriteEntry(entry *kvpb.WALEntry) error {
 	if wm.currentWAL == nil || wm.currentWAL.entries >= wm.currentWAL.maxEntries {
 		var newStartIdx uint64 = entry.Index
 		if wm.currentWAL != nil {
@@ -140,7 +141,16 @@ func (wm *WALManager) WriteEntry(entry *WALEntry) error {
 			return err
 		}
 	}
-	if err := wm.currentWAL.encoder.Encode(entry); err != nil {
+	data, err := proto.Marshal(entry)
+	if err != nil {
+		return err
+	}
+	var lenBuf [4]byte
+	binary.BigEndian.PutUint32(lenBuf[:], uint32(len(data)))
+	if _, err := wm.currentWAL.file.Write(lenBuf[:]); err != nil {
+		return err
+	}
+	if _, err := wm.currentWAL.file.Write(data); err != nil {
 		return err
 	}
 	wm.currentWAL.entries++
@@ -148,7 +158,7 @@ func (wm *WALManager) WriteEntry(entry *WALEntry) error {
 	return wm.currentWAL.file.Sync()
 }
 
-func (wm *WALManager) ReplayAllWALs(apply func(*WALEntry) error, fromIdx uint64) error {
+func (wm *WALManager) ReplayAllWALs(apply func(*kvpb.WALEntry) error, fromIdx uint64) error {
 	files, err := os.ReadDir(wm.walDir)
 	if err != nil {
 		return err
@@ -160,28 +170,43 @@ func (wm *WALManager) ReplayAllWALs(apply func(*WALEntry) error, fromIdx uint64)
 		}
 	}
 	sort.Strings(walFiles)
+	var anyErr error
 	for _, walPath := range walFiles {
 		file, err := os.Open(walPath)
 		if err != nil {
-			return err
+			fmt.Printf("[WAL] 打开WAL文件失败: %s, err=%v\n", walPath, err)
+			anyErr = err
+			continue
 		}
-		dec := gob.NewDecoder(file)
 		for {
-			var entry WALEntry
-			err := dec.Decode(&entry)
+			var lenBuf [4]byte
+			_, err := file.Read(lenBuf[:])
 			if err != nil {
 				break
 			}
+			msgLen := binary.BigEndian.Uint32(lenBuf[:])
+			msgBuf := make([]byte, msgLen)
+			_, err = file.Read(msgBuf)
+			if err != nil {
+				break
+			}
+			var entry kvpb.WALEntry
+			if err := proto.Unmarshal(msgBuf, &entry); err != nil {
+				fmt.Printf("[WAL] ReplayAllWALs: proto.Unmarshal failed: %v\n", err)
+				anyErr = err
+				continue
+			}
 			if entry.Index >= fromIdx {
 				if err := apply(&entry); err != nil {
-					file.Close()
-					return err
+					fmt.Printf("[WAL] ReplayAllWALs: apply entry Index=%d failed: %v\n", entry.Index, err)
+					anyErr = err
+					continue
 				}
 			}
 		}
 		file.Close()
 	}
-	return nil
+	return anyErr
 }
 
 func (wm *WALManager) CleanupWALFiles(snapshotIdx uint64) error {

@@ -523,6 +523,48 @@ func (sl *SkipList) GetAllWithTTL() []KVPair {
 	return res
 }
 
+// AllNodes 返回所有节点（用于快照保存所有历史版本）
+func (sl *SkipList) AllNodes() []*Node {
+	sl.mu.RLock()
+	defer sl.mu.RUnlock()
+	var nodes []*Node
+	x := sl.header.next[0]
+	for x != nil {
+		nodes = append(nodes, x)
+		x = x.next[0]
+	}
+	return nodes
+}
+
+// RestoreVersion 直接插入一个历史版本（用于快照恢复）
+func (sl *SkipList) RestoreVersion(version *VersionedKV) {
+	sl.mu.Lock()
+	defer sl.mu.Unlock()
+
+	node := sl.findOrCreateNode(version.Key)
+	// 保证历史版本按ModRev递增插入
+	inserted := false
+	for i, v := range node.versions {
+		if version.ModRev < v.ModRev {
+			// 插入到第i个位置
+			node.versions = append(node.versions[:i], append([]*VersionedKV{version}, node.versions[i:]...)...)
+			inserted = true
+			break
+		}
+	}
+	if !inserted {
+		node.versions = append(node.versions, version)
+	}
+
+	// 更新currentRevision和compactedRev
+	if version.ModRev >= sl.currentRevision {
+		sl.currentRevision = version.ModRev + 1
+	}
+	if version.ModRev < sl.compactedRev || sl.compactedRev == 0 {
+		sl.compactedRev = version.ModRev
+	}
+}
+
 // 错误定义
 var (
 	ErrKeyNotFound       = &KVError{"key not found"}

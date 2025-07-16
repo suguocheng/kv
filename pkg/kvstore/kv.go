@@ -1,16 +1,13 @@
 package kvstore
 
 import (
-	"bufio"
 	"encoding/base64"
 	"fmt"
 	"kv/pkg/kvpb"
 	"kv/pkg/watch"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -47,27 +44,9 @@ func NewKV(walDir string, maxEntriesPerFile int) (*KV, error) {
 		watcher:      watch.NewKVWatcher(), // 初始化Watch功能
 	}
 
-	// 1. 先从快照恢复，并设置lastSnapshotIndex
+	// 1. 先从快照恢复
 	_ = kv.RestoreFromSnapshot()
-	// 读取快照点index
-	data, err := os.ReadFile(snapshotPath)
 	fromIdx := uint64(1)
-	if err == nil && len(data) > 0 {
-		var kvStore kvpb.KVStore
-		if proto.Unmarshal(data, &kvStore) == nil {
-			if len(kvStore.Pairs) > 0 {
-				// 取最大Ttl作为快照点（如无ModRev字段，可用其他合适字段，或直接跳过，fromIdx=1）
-				maxIdx := int64(0)
-				for _, pair := range kvStore.Pairs {
-					if pair.Ttl > maxIdx {
-						maxIdx = pair.Ttl
-					}
-				}
-				kv.lastSnapshotIndex = int(maxIdx)
-				fromIdx = uint64(maxIdx + 1)
-			}
-		}
-	}
 	// 2. 自动重放WAL，恢复未快照的内容
 	walManager.ReplayAllWALs(kv.ApplyWALEntry, fromIdx)
 
@@ -118,39 +97,24 @@ func (kv *KV) RestoreFromSnapshot() error {
 	if os.IsNotExist(err) || len(data) == 0 {
 		return nil
 	}
-	var kvStore kvpb.KVStore
-	if err := proto.Unmarshal(data, &kvStore); err != nil {
+	var mvccStore kvpb.MVCCStore
+	if err := proto.Unmarshal(data, &mvccStore); err != nil {
 		return err
 	}
-
-	restored := 0
-	skipped := 0
-
-	for _, pair := range kvStore.Pairs {
-		ttl := int64(0)
-		if pair.Ttl > 0 {
-			ttl = pair.Ttl
-		}
-
-		// 检查是否过期（快照中的key没有时间戳，使用当前时间作为创建时间）
-		if ttl > 0 {
-			// 对于快照中的key，我们假设它们是在快照创建时写入的
-			// 这里使用一个保守的策略：如果TTL很短（比如小于1小时），就跳过
-			if ttl < 3600 { // 1小时
-				fmt.Printf("Skipping potentially expired key from snapshot: %s (TTL: %d)\n", pair.Key, ttl)
-				skipped++
-				continue
-			}
-		}
-
-		kv.store.Put(pair.Key, pair.Value, ttl)
-		restored++
+	kv.store = NewSkipList()
+	for _, pair := range mvccStore.Pairs {
+		kv.store.RestoreVersion(&VersionedKV{
+			Key:        pair.Key,
+			Value:      pair.Value,
+			TTL:        pair.Ttl,
+			CreatedRev: pair.CreatedRevision,
+			ModRev:     pair.ModRevision,
+			Version:    pair.Version,
+			Deleted:    pair.Deleted,
+			CreatedAt:  0, // 可选: 若有CreatedAt字段可补充
+		})
 	}
-
-	if restored > 0 || skipped > 0 {
-		fmt.Printf("Snapshot restore: restored %d keys, skipped %d potentially expired keys\n", restored, skipped)
-	}
-
+	kv.store.currentRevision = mvccStore.CurrentRevision
 	return nil
 }
 
@@ -161,39 +125,24 @@ func (kv *KV) RestoreFromSnapshotData(snapshot []byte) error {
 	if len(snapshot) == 0 {
 		return nil
 	}
-	var kvStore kvpb.KVStore
-	if err := proto.Unmarshal(snapshot, &kvStore); err != nil {
+	var mvccStore kvpb.MVCCStore
+	if err := proto.Unmarshal(snapshot, &mvccStore); err != nil {
 		return err
 	}
 	kv.store = NewSkipList()
-
-	restored := 0
-	skipped := 0
-
-	for _, pair := range kvStore.Pairs {
-		ttl := int64(0)
-		if pair.Ttl > 0 {
-			ttl = pair.Ttl
-		}
-
-		// 检查是否过期（快照中的key没有时间戳，使用保守策略）
-		if ttl > 0 {
-			// 对于快照中的key，如果TTL很短就跳过
-			if ttl < 3600 { // 1小时
-				fmt.Printf("Skipping potentially expired key from snapshot data: %s (TTL: %d)\n", pair.Key, ttl)
-				skipped++
-				continue
-			}
-		}
-
-		kv.store.Put(pair.Key, pair.Value, ttl)
-		restored++
+	for _, pair := range mvccStore.Pairs {
+		kv.store.RestoreVersion(&VersionedKV{
+			Key:        pair.Key,
+			Value:      pair.Value,
+			TTL:        pair.Ttl,
+			CreatedRev: pair.CreatedRevision,
+			ModRev:     pair.ModRevision,
+			Version:    pair.Version,
+			Deleted:    pair.Deleted,
+			CreatedAt:  0, // 可选: 若有CreatedAt字段可补充
+		})
 	}
-
-	if restored > 0 || skipped > 0 {
-		fmt.Printf("Snapshot data restore: restored %d keys, skipped %d potentially expired keys\n", restored, skipped)
-	}
-
+	kv.store.currentRevision = mvccStore.CurrentRevision
 	// 覆盖本地快照文件
 	os.WriteFile(kv.snapshotPath, snapshot, 0644)
 	return nil
@@ -201,6 +150,7 @@ func (kv *KV) RestoreFromSnapshotData(snapshot []byte) error {
 
 // Put/PutWithTTL/Delete等方法只做业务apply，不再写WAL
 func (kv *KV) Put(key, value string) error {
+	fmt.Printf("[KV] Put: key=%s value=%s\n", key, value)
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
 	_, err := kv.store.Put(key, value, 0)
@@ -208,6 +158,7 @@ func (kv *KV) Put(key, value string) error {
 }
 
 func (kv *KV) PutWithTTL(key, value string, ttl int64) error {
+	fmt.Printf("[KV] PutWithTTL: key=%s value=%s ttl=%d\n", key, value, ttl)
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
 	_, err := kv.store.Put(key, value, ttl)
@@ -223,6 +174,7 @@ func (kv *KV) Get(key string) (string, error) {
 }
 
 func (kv *KV) Delete(key string) error {
+	fmt.Printf("[KV] Delete: key=%s\n", key)
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
 	_, err := kv.store.Delete(key)
@@ -239,8 +191,6 @@ func (kv *KV) Close() error {
 		close(kv.stopCleanup)
 	}
 
-	// WAL关闭由WALManager内部管理，不在此处调用
-	// return kv.walManager.Close()
 	return nil
 }
 
@@ -248,18 +198,24 @@ func (kv *KV) SerializeState() ([]byte, error) {
 	kv.mu.RLock()
 	defer kv.mu.RUnlock()
 
-	kvStore := &kvpb.KVStore{}
-	pairs := kv.store.GetAllWithTTL() // 获取所有键值对（包括TTL）
-
-	for _, pair := range pairs {
-		kvStore.Pairs = append(kvStore.Pairs, &kvpb.KVPair{
-			Key:   pair.Key,
-			Value: pair.Value,
-			Ttl:   pair.TTL,
-		})
+	mvccStore := &kvpb.MVCCStore{}
+	nodes := kv.store.AllNodes()
+	for _, node := range nodes {
+		for _, version := range node.versions {
+			mvccStore.Pairs = append(mvccStore.Pairs, &kvpb.VersionedKVPair{
+				Key:             version.Key,
+				Value:           version.Value,
+				Ttl:             version.TTL,
+				CreatedRevision: version.CreatedRev,
+				ModRevision:     version.ModRev,
+				Version:         version.Version,
+				Deleted:         version.Deleted,
+			})
+		}
 	}
+	mvccStore.CurrentRevision = kv.store.currentRevision
 
-	data, err := proto.Marshal(kvStore)
+	data, err := proto.Marshal(mvccStore)
 	if err != nil {
 		return nil, err
 	}
@@ -276,13 +232,6 @@ func (kv *KV) CleanupWALFiles(snapshotIndex uint64) error {
 
 	return kv.walManager.CleanupWALFiles(snapshotIndex)
 }
-
-// GetWALStats 获取WAL统计信息
-// func (kv *KV) GetWALStats() map[string]interface{} {
-// 	kv.mu.RLock()
-// 	defer kv.mu.RUnlock()
-// 	return kv.walManager.GetWALStats()
-// }
 
 // GetWithTTL 获取键值对及其TTL信息
 func (kv *KV) GetWithTTL(key string) (string, int64, error) {
@@ -312,90 +261,6 @@ func (kv *KV) Range(start, end string, revision int64, limit int64) ([]*Versione
 
 func (kv *KV) Compact(revision int64) (int64, error) {
 	return kv.store.Compact(revision)
-}
-
-// replayWALs 重放WAL文件到MVCC存储
-func (kv *KV) replayWALs() error {
-	files, err := os.ReadDir(kv.walManager.walDir)
-	if err != nil {
-		return fmt.Errorf("failed to read WAL directory: %v", err)
-	}
-
-	var walFiles []string
-	for _, file := range files {
-		if !file.IsDir() && strings.HasPrefix(file.Name(), "wal_") && strings.HasSuffix(file.Name(), ".log") {
-			walFiles = append(walFiles, filepath.Join(kv.walManager.walDir, file.Name()))
-		}
-	}
-
-	sort.Strings(walFiles)
-	for _, walPath := range walFiles {
-		if err := kv.replayWALFile(walPath); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// replayWALFile 重放单个WAL文件
-func (kv *KV) replayWALFile(walPath string) error {
-	file, err := os.OpenFile(walPath, os.O_RDONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		parts := strings.SplitN(line, " ", 5)
-		if len(parts) < 2 {
-			continue
-		}
-
-		kv.LastAppliedIndex++ // 每重放一条，递增lastAppliedIndex
-
-		switch parts[0] {
-		case "PUT":
-			if len(parts) >= 4 {
-				ttl, _ := strconv.ParseInt(parts[3], 10, 64)
-				kv.store.Put(parts[1], parts[2], ttl)
-			} else if len(parts) == 3 {
-				kv.store.Put(parts[1], parts[2], 0)
-			}
-		case "DELETE":
-			kv.store.Delete(parts[1])
-		case "TXN":
-			// 处理事务操作
-			if len(parts) >= 4 {
-				succeeded := parts[1] == "true"
-				txnData := parts[3]
-				// 重新构造事务请求并执行
-				data, err := base64.StdEncoding.DecodeString(txnData)
-				if err != nil {
-					continue
-				}
-				var req kvpb.TxnRequest
-				if err := proto.Unmarshal(data, &req); err != nil {
-					continue
-				}
-				// 根据原始的成功/失败状态执行操作
-				var ops []*kvpb.Op
-				if succeeded {
-					ops = req.Success
-				} else {
-					ops = req.Failure
-				}
-				// 直接执行操作，不写入WAL（因为这是重放）
-				for _, op := range ops {
-					kv.applyOp(op)
-				}
-			}
-		}
-	}
-
-	return scanner.Err()
 }
 
 // ApplyTxn 在raft层应用事务操作
@@ -471,14 +336,6 @@ func (kv *KV) Txn(req *kvpb.TxnRequest) (*kvpb.TxnResponse, error) {
 		ops = req.Failure
 	}
 
-	// 如果有写操作，需要写入WAL（已由raft层负责，这里不再写WAL）
-	// if len(ops) > 0 && kv.hasWriteOps(ops) {
-	// 	logEntry := kv.formatTxnToWAL(req, succeeded)
-	// 	if err := kv.walManager.WriteEntry(logEntry); err != nil {
-	// 		return nil, fmt.Errorf("failed to write txn to WAL: %v", err)
-	// 	}
-	// }
-
 	// 依次执行操作
 	responses := make([]*kvpb.OpResponse, 0, len(ops))
 	for _, op := range ops {
@@ -490,27 +347,6 @@ func (kv *KV) Txn(req *kvpb.TxnRequest) (*kvpb.TxnResponse, error) {
 		Succeeded: succeeded,
 		Responses: responses,
 	}, nil
-}
-
-// hasWriteOps 检查操作列表中是否包含写操作
-func (kv *KV) hasWriteOps(ops []*kvpb.Op) bool {
-	for _, op := range ops {
-		if op.Type == "PUT" || op.Type == "DELETE" || op.Type == "DEL" {
-			return true
-		}
-	}
-	return false
-}
-
-// formatTxnToWAL 将事务格式化为WAL日志字符串
-func (kv *KV) formatTxnToWAL(req *kvpb.TxnRequest, succeeded bool) string {
-	timestamp := time.Now().Unix()
-
-	// 格式: TXN <succeeded> <timestamp> <base64_encoded_request>
-	txnData, _ := proto.Marshal(req)
-	b64Data := base64.StdEncoding.EncodeToString(txnData)
-
-	return fmt.Sprintf("TXN %t %d %s", succeeded, timestamp, b64Data)
 }
 
 // evalCompare 评估比较条件
@@ -624,12 +460,6 @@ func (kv *KV) GetStats() map[string]interface{} {
 	defer kv.mu.RUnlock()
 
 	stats := kv.store.GetStats()
-	// walStats := kv.walManager.GetWALStats()
-
-	// 合并统计信息
-	// for k, v := range walStats {
-	// 	stats[k] = v
-	// }
 
 	return stats
 }
@@ -682,14 +512,15 @@ func (kv *KV) CleanupWatchers() {
 }
 
 // 新增：应用WALEntry到store
-func (kv *KV) ApplyWALEntry(entry *WALEntry) error {
+func (kv *KV) ApplyWALEntry(entry *kvpb.WALEntry) error {
 	// 假设Data为protobuf序列化的kvpb.Op
 	var op kvpb.Op
 	if err := proto.Unmarshal(entry.Data, &op); err != nil {
+		fmt.Printf("[WAL] Unmarshal Op failed: Index=%d, err=%v\n", entry.Index, err)
 		return err
 	}
-	kv.mu.Lock()
-	defer kv.mu.Unlock()
+	// 这里不再加锁，由ReplayWALsFrom统一加锁
+	// 其余分支不再打印[WAL]日志
 	switch op.Type {
 	case "Put":
 		_, err := kv.store.Put(op.Key, string(op.Value), 0)
@@ -701,9 +532,9 @@ func (kv *KV) ApplyWALEntry(entry *WALEntry) error {
 		_, err := kv.store.Delete(op.Key)
 		return err
 	case "Txn":
-		// 反序列化TxnRequest
 		var req kvpb.TxnRequest
 		if err := proto.Unmarshal(op.Value, &req); err != nil {
+			fmt.Printf("[WAL] Unmarshal TxnRequest failed: Index=%d, err=%v\n", entry.Index, err)
 			return err
 		}
 		succeeded := op.Ttl == 1 // 约定Ttl==1表示成功分支，否则失败分支
@@ -718,7 +549,8 @@ func (kv *KV) ApplyWALEntry(entry *WALEntry) error {
 		}
 		return nil
 	case "Compact":
-		revision, err := strconv.ParseInt(string(op.Value), 10, 64)
+		revisionStr := string(op.Value)
+		revision, err := strconv.ParseInt(revisionStr, 10, 64)
 		if err != nil {
 			return err
 		}
