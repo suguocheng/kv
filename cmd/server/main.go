@@ -10,12 +10,7 @@ func main() {
 	rf, applyCh := initRaft(conf, kv)
 
 	// 启动 Raft gRPC 服务端，监听 peer 通信端口
-	go func() {
-		err := rf.ServeGRPC(conf.PeerAddrs[me])
-		if err != nil {
-			panic(err)
-		}
-	}()
+	startRaftGRPCServer(rf, conf.PeerAddrs[me])
 
 	startApplyLoop(rf, kv, applyCh)
 

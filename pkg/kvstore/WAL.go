@@ -132,6 +132,15 @@ func (wm *WALManager) createNewWALFile(startIdx uint64) error {
 }
 
 func (wm *WALManager) WriteEntry(entry *kvpb.WALEntry) error {
+	// 去重：如果 index 已经存在于当前或历史 WAL 文件，则跳过写入
+	for _, walFile := range wm.walFiles {
+		if entry.Index >= walFile.StartIdx && entry.Index <= walFile.EndIdx {
+			return nil // 已经写过，直接返回
+		}
+	}
+	if wm.currentWAL != nil && entry.Index <= wm.currentWAL.EndIdx {
+		return nil // 当前分段已写过
+	}
 	if wm.currentWAL == nil || wm.currentWAL.entries >= wm.currentWAL.maxEntries {
 		var newStartIdx uint64 = entry.Index
 		if wm.currentWAL != nil {

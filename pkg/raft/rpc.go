@@ -138,35 +138,51 @@ func (rf *Raft) AppendEntries(ctx context.Context, req *raftpb.AppendEntriesArgs
 			}
 		}
 
-		// 复制日志
-		walEntries := make([]*kvpb.WALEntry, 0, len(req.Entries))
-		for _, entry := range req.Entries {
-			walEntry := &kvpb.WALEntry{
-				Term:  uint64(entry.Term),
-				Index: uint64(entry.Index),
-				Type:  kvpb.EntryType_ENTRY_NORMAL,
-				Data:  entry.Command,
+		// 复制日志（修正：只对新增的 entry 写 WAL 和追加到内存日志）
+		appendStart := 0
+		for i, entry := range req.Entries {
+			logIndex := int(entry.Index)
+			if logIndex <= lastIndex && rf.logs[logIndex-firstIndex].Term == int(entry.Term) {
+				// 已存在且 term 一致，跳过
+				continue
+			} else {
+				appendStart = i
+				break
 			}
-			walEntries = append(walEntries, walEntry)
 		}
-		if rf.walManager != nil && len(walEntries) > 0 {
-			for _, walEntry := range walEntries {
-				if err := rf.walManager.WriteEntry(walEntry); err != nil {
-					log.DPrintf("Follower %d WAL 写入失败，拒绝追加日志: %v", rf.me, err)
-					resp.Term = int32(rf.currentTerm)
-					resp.Success = false
-					return resp, nil
+		if appendStart < len(req.Entries) {
+			// 先截断日志
+			rf.logs = rf.logs[:int(req.PrevLogIndex)-firstIndex+1+appendStart]
+			// 只写新增部分 WAL
+			walEntries := make([]*kvpb.WALEntry, 0, len(req.Entries)-appendStart)
+			for _, entry := range req.Entries[appendStart:] {
+				walEntry := &kvpb.WALEntry{
+					Term:  uint64(entry.Term),
+					Index: uint64(entry.Index),
+					Type:  kvpb.EntryType_ENTRY_NORMAL,
+					Data:  entry.Command,
+				}
+				walEntries = append(walEntries, walEntry)
+			}
+			if rf.walManager != nil && len(walEntries) > 0 {
+				for _, walEntry := range walEntries {
+					if err := rf.walManager.WriteEntry(walEntry); err != nil {
+						log.DPrintf("Follower %d WAL 写入失败，拒绝追加日志: %v", rf.me, err)
+						resp.Term = int32(rf.currentTerm)
+						resp.Success = false
+						return resp, nil
+					}
 				}
 			}
-		}
-		rf.logs = rf.logs[:int(req.PrevLogIndex)-firstIndex+1]
-		for _, entry := range req.Entries {
-			logEntry := LogEntry{
-				Index:   int(entry.Index),
-				Term:    int(entry.Term),
-				Command: entry.Command,
+			// 追加到内存日志
+			for _, entry := range req.Entries[appendStart:] {
+				logEntry := LogEntry{
+					Index:   int(entry.Index),
+					Term:    int(entry.Term),
+					Command: entry.Command,
+				}
+				rf.logs = append(rf.logs, logEntry)
 			}
-			rf.logs = append(rf.logs, logEntry)
 		}
 		rf.persist()
 

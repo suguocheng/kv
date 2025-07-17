@@ -496,10 +496,6 @@ func Make(me int, peerAddrs map[int]string, myAddr string, applyCh chan ApplyMsg
 	return rf
 }
 
-func (rf *Raft) Ping(args struct{}, reply *struct{}) error {
-	return nil
-}
-
 // WaitForIndex 等待特定索引被应用（用于同步操作）
 func (rf *Raft) WaitForIndex(index int, timeout time.Duration) bool {
 	startTime := time.Now()

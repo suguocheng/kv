@@ -73,6 +73,16 @@ func initRaft(conf *NodeConfig, kv *kvstore.KV) (*raft.Raft, chan raft.ApplyMsg)
 	return rf, applyCh
 }
 
+// 启动 Raft gRPC 服务端
+func startRaftGRPCServer(rf *raft.Raft, addr string) {
+	go func() {
+		err := rf.ServeGRPC(addr)
+		if err != nil {
+			panic(err)
+		}
+	}()
+}
+
 func startApplyLoop(rf *raft.Raft, kv *kvstore.KV, applyCh chan raft.ApplyMsg) {
 	lastSnapshottedIndex := 0
 	go func() {
