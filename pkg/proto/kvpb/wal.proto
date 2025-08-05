@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package kvpb;
 
-option go_package = "kv/proto/pkg/kvpb";
+option go_package = "kv/pkg/proto/kvpb";
 
 // WAL entry类型
 enum EntryType {

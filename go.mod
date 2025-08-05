@@ -3,6 +3,7 @@ module kv
 go 1.23.1
 
 require (
+	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/mattn/go-runewidth v0.0.3 // indirect
 	github.com/peterh/liner v1.2.2 // indirect
 	golang.org/x/net v0.38.0 // indirect

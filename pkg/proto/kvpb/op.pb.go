@@ -98,7 +98,7 @@ const file_pkg_proto_kvpb_op_proto_rawDesc = "" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x12\x10\n" +
 	"\x03key\x18\x02 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x03 \x01(\fR\x05value\x12\x10\n" +
-	"\x03ttl\x18\x04 \x01(\x03R\x03ttlB\x13Z\x11kv/proto/pkg/kvpbb\x06proto3"
+	"\x03ttl\x18\x04 \x01(\x03R\x03ttlB\x13Z\x11kv/pkg/proto/kvpbb\x06proto3"
 
 var (
 	file_pkg_proto_kvpb_op_proto_rawDescOnce sync.Once

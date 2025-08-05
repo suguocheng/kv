@@ -445,7 +445,7 @@ const file_pkg_proto_kvpb_transaction_proto_rawDesc = "" +
 	"\x03MOD\x10\x02\x12\t\n" +
 	"\x05VALUE\x10\x03\x12\n" +
 	"\n" +
-	"\x06EXISTS\x10\x04B\x13Z\x11kv/proto/pkg/kvpbb\x06proto3"
+	"\x06EXISTS\x10\x04B\x13Z\x11kv/pkg/proto/kvpbb\x06proto3"
 
 var (
 	file_pkg_proto_kvpb_transaction_proto_rawDescOnce sync.Once

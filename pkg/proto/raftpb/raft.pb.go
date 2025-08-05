@@ -587,7 +587,7 @@ const file_pkg_proto_raftpb_raft_proto_rawDesc = "" +
 	"\vRaftService\x12@\n" +
 	"\vRequestVote\x12\x17.raftpb.RequestVoteArgs\x1a\x18.raftpb.RequestVoteReply\x12F\n" +
 	"\rAppendEntries\x12\x19.raftpb.AppendEntriesArgs\x1a\x1a.raftpb.AppendEntriesReply\x12L\n" +
-	"\x0fInstallSnapshot\x12\x1b.raftpb.InstallSnapshotArgs\x1a\x1c.raftpb.InstallSnapshotReplyB\x0fZ\rkv/pkg/raftpbb\x06proto3"
+	"\x0fInstallSnapshot\x12\x1b.raftpb.InstallSnapshotArgs\x1a\x1c.raftpb.InstallSnapshotReplyB\x15Z\x13kv/pkg/proto/raftpbb\x06proto3"
 
 var (
 	file_pkg_proto_raftpb_raft_proto_rawDescOnce sync.Once

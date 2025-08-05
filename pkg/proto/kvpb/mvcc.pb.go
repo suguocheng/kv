@@ -638,7 +638,7 @@ const file_pkg_proto_kvpb_mvcc_proto_rawDesc = "" +
 	"\bphysical\x18\x02 \x01(\bR\bphysical\"K\n" +
 	"\x0fCompactResponse\x12\x1a\n" +
 	"\brevision\x18\x01 \x01(\x03R\brevision\x12\x1c\n" +
-	"\tcompacted\x18\x02 \x01(\x03R\tcompactedB\x13Z\x11kv/proto/pkg/kvpbb\x06proto3"
+	"\tcompacted\x18\x02 \x01(\x03R\tcompactedB\x13Z\x11kv/pkg/proto/kvpbb\x06proto3"
 
 var (
 	file_pkg_proto_kvpb_mvcc_proto_rawDescOnce sync.Once

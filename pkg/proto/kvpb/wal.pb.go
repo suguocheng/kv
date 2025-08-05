@@ -154,7 +154,7 @@ const file_pkg_proto_kvpb_wal_proto_rawDesc = "" +
 	"\fENTRY_NORMAL\x10\x00\x12\x15\n" +
 	"\x11ENTRY_CONF_CHANGE\x10\x01\x12\x0e\n" +
 	"\n" +
-	"ENTRY_META\x10\x02B\x13Z\x11kv/proto/pkg/kvpbb\x06proto3"
+	"ENTRY_META\x10\x02B\x13Z\x11kv/pkg/proto/kvpbb\x06proto3"
 
 var (
 	file_pkg_proto_kvpb_wal_proto_rawDescOnce sync.Once

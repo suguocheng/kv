@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"kv/log"
+	"kv/pkg/config"
 	"kv/pkg/kvstore"
 	"kv/pkg/proto/kvpb"
 	"kv/pkg/raft"
@@ -37,21 +38,29 @@ func parseNodeID() int {
 }
 
 func loadNodeConfig(me int) *NodeConfig {
-	peerAddrs := map[int]string{
-		0: "localhost:8000",
-		1: "localhost:8001",
-		2: "localhost:8002",
+	// 加载配置文件
+	cfg, err := config.LoadConfig("config.env")
+	if err != nil {
+		log.DPrintf("Failed to load config: %v", err)
+		panic(fmt.Sprintf("Failed to load config: %v", err))
 	}
-	clientPort := 9000 + me
+
+	// 获取节点特定的配置
+	serverConfig := cfg.GetServerConfig(me)
+	peerAddrs := cfg.GetPeerAddrs()
+	clientAddr := cfg.GetClientAddr(me)
+	walDir := cfg.GetWALDir(me)
+	raftStatePath := cfg.GetRaftStatePath(me)
+	snapshotPath := cfg.GetSnapshotPath(me)
 
 	return &NodeConfig{
 		Me:            me,
-		ClientAddr:    fmt.Sprintf("localhost:%d", clientPort),
+		ClientAddr:    clientAddr,
 		PeerAddrs:     peerAddrs,
-		RaftStatePath: fmt.Sprintf("data/node%d/raft-state.pb", me),
-		SnapshotPath:  fmt.Sprintf("data/node%d/snapshot.pb", me),
-		WALDir:        fmt.Sprintf("data/node%d/wal", me),
-		MaxWALEntries: 5, // 每个WAL文件最多100个条目，与快照阈值保持一致
+		RaftStatePath: raftStatePath,
+		SnapshotPath:  snapshotPath,
+		WALDir:        walDir,
+		MaxWALEntries: serverConfig.MaxWALEntries,
 	}
 }
 

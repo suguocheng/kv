@@ -250,7 +250,7 @@ const file_pkg_proto_kvpb_watch_proto_rawDesc = "" +
 	"\x05value\x18\x03 \x01(\tR\x05value\x12\x1a\n" +
 	"\brevision\x18\x04 \x01(\x03R\brevision\x12\x1c\n" +
 	"\ttimestamp\x18\x05 \x01(\x03R\ttimestamp\x12\x10\n" +
-	"\x03ttl\x18\x06 \x01(\x03R\x03ttlB\x13Z\x11kv/proto/pkg/kvpbb\x06proto3"
+	"\x03ttl\x18\x06 \x01(\x03R\x03ttlB\x13Z\x11kv/pkg/proto/kvpbb\x06proto3"
 
 var (
 	file_pkg_proto_kvpb_watch_proto_rawDescOnce sync.Once
