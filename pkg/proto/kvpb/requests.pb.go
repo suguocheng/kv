@@ -376,6 +376,43 @@ func (x *UnwatchRequest) GetWatcherId() string {
 	return ""
 }
 
+// GetWatchListRequest 获取监听器列表请求
+type GetWatchListRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetWatchListRequest) Reset() {
+	*x = GetWatchListRequest{}
+	mi := &file_pkg_proto_kvpb_common_requests_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetWatchListRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetWatchListRequest) ProtoMessage() {}
+
+func (x *GetWatchListRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_kvpb_common_requests_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetWatchListRequest.ProtoReflect.Descriptor instead.
+func (*GetWatchListRequest) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_kvpb_common_requests_proto_rawDescGZIP(), []int{7}
+}
+
 // GetStatsRequest 获取统计信息请求
 type GetStatsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -385,7 +422,7 @@ type GetStatsRequest struct {
 
 func (x *GetStatsRequest) Reset() {
 	*x = GetStatsRequest{}
-	mi := &file_pkg_proto_kvpb_common_requests_proto_msgTypes[7]
+	mi := &file_pkg_proto_kvpb_common_requests_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -397,7 +434,7 @@ func (x *GetStatsRequest) String() string {
 func (*GetStatsRequest) ProtoMessage() {}
 
 func (x *GetStatsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_kvpb_common_requests_proto_msgTypes[7]
+	mi := &file_pkg_proto_kvpb_common_requests_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -410,7 +447,7 @@ func (x *GetStatsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStatsRequest.ProtoReflect.Descriptor instead.
 func (*GetStatsRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_kvpb_common_requests_proto_rawDescGZIP(), []int{7}
+	return file_pkg_proto_kvpb_common_requests_proto_rawDescGZIP(), []int{8}
 }
 
 var File_pkg_proto_kvpb_common_requests_proto protoreflect.FileDescriptor
@@ -439,7 +476,8 @@ const file_pkg_proto_kvpb_common_requests_proto_rawDesc = "" +
 	"\x05limit\x18\x02 \x01(\x03R\x05limit\"/\n" +
 	"\x0eUnwatchRequest\x12\x1d\n" +
 	"\n" +
-	"watcher_id\x18\x01 \x01(\tR\twatcherId\"\x11\n" +
+	"watcher_id\x18\x01 \x01(\tR\twatcherId\"\x15\n" +
+	"\x13GetWatchListRequest\"\x11\n" +
 	"\x0fGetStatsRequestB\x13Z\x11kv/pkg/proto/kvpbb\x06proto3"
 
 var (
@@ -454,7 +492,7 @@ func file_pkg_proto_kvpb_common_requests_proto_rawDescGZIP() []byte {
 	return file_pkg_proto_kvpb_common_requests_proto_rawDescData
 }
 
-var file_pkg_proto_kvpb_common_requests_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_pkg_proto_kvpb_common_requests_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_pkg_proto_kvpb_common_requests_proto_goTypes = []any{
 	(*GetRequest)(nil),             // 0: kvpb.GetRequest
 	(*PutRequest)(nil),             // 1: kvpb.PutRequest
@@ -463,7 +501,8 @@ var file_pkg_proto_kvpb_common_requests_proto_goTypes = []any{
 	(*GetWithRevisionRequest)(nil), // 4: kvpb.GetWithRevisionRequest
 	(*GetHistoryRequest)(nil),      // 5: kvpb.GetHistoryRequest
 	(*UnwatchRequest)(nil),         // 6: kvpb.UnwatchRequest
-	(*GetStatsRequest)(nil),        // 7: kvpb.GetStatsRequest
+	(*GetWatchListRequest)(nil),    // 7: kvpb.GetWatchListRequest
+	(*GetStatsRequest)(nil),        // 8: kvpb.GetStatsRequest
 }
 var file_pkg_proto_kvpb_common_requests_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -484,7 +523,7 @@ func file_pkg_proto_kvpb_common_requests_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_proto_kvpb_common_requests_proto_rawDesc), len(file_pkg_proto_kvpb_common_requests_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

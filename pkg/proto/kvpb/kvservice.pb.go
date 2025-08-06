@@ -24,7 +24,7 @@ var File_pkg_proto_kvpb_service_kvservice_proto protoreflect.FileDescriptor
 
 const file_pkg_proto_kvpb_service_kvservice_proto_rawDesc = "" +
 	"\n" +
-	"&pkg/proto/kvpb/service/kvservice.proto\x12\x04kvpb\x1a$pkg/proto/kvpb/common/requests.proto\x1a%pkg/proto/kvpb/common/responses.proto\x1a\x1apkg/proto/kvpb/kv/kv.proto\x1a,pkg/proto/kvpb/transaction/transaction.proto\x1a pkg/proto/kvpb/watch/watch.proto2\x9d\x05\n" +
+	"&pkg/proto/kvpb/service/kvservice.proto\x12\x04kvpb\x1a$pkg/proto/kvpb/common/requests.proto\x1a%pkg/proto/kvpb/common/responses.proto\x1a\x1apkg/proto/kvpb/kv/kv.proto\x1a,pkg/proto/kvpb/transaction/transaction.proto\x1a pkg/proto/kvpb/watch/watch.proto2\xe4\x05\n" +
 	"\tKVService\x12*\n" +
 	"\x03Get\x12\x10.kvpb.GetRequest\x1a\x11.kvpb.GetResponse\x12*\n" +
 	"\x03Put\x12\x10.kvpb.PutRequest\x1a\x11.kvpb.PutResponse\x123\n" +
@@ -38,7 +38,8 @@ const file_pkg_proto_kvpb_service_kvservice_proto_rawDesc = "" +
 	"\aCompact\x12\x14.kvpb.CompactRequest\x1a\x15.kvpb.CompactResponse\x12*\n" +
 	"\x03Txn\x12\x10.kvpb.TxnRequest\x1a\x11.kvpb.TxnResponse\x12/\n" +
 	"\x05Watch\x12\x12.kvpb.WatchRequest\x1a\x10.kvpb.WatchEvent0\x01\x126\n" +
-	"\aUnwatch\x12\x14.kvpb.UnwatchRequest\x1a\x15.kvpb.UnwatchResponse\x129\n" +
+	"\aUnwatch\x12\x14.kvpb.UnwatchRequest\x1a\x15.kvpb.UnwatchResponse\x12E\n" +
+	"\fGetWatchList\x12\x19.kvpb.GetWatchListRequest\x1a\x1a.kvpb.GetWatchListResponse\x129\n" +
 	"\bGetStats\x12\x15.kvpb.GetStatsRequest\x1a\x16.kvpb.GetStatsResponseB\x13Z\x11kv/pkg/proto/kvpbb\x06proto3"
 
 var file_pkg_proto_kvpb_service_kvservice_proto_goTypes = []any{
@@ -53,18 +54,20 @@ var file_pkg_proto_kvpb_service_kvservice_proto_goTypes = []any{
 	(*TxnRequest)(nil),              // 8: kvpb.TxnRequest
 	(*WatchRequest)(nil),            // 9: kvpb.WatchRequest
 	(*UnwatchRequest)(nil),          // 10: kvpb.UnwatchRequest
-	(*GetStatsRequest)(nil),         // 11: kvpb.GetStatsRequest
-	(*GetResponse)(nil),             // 12: kvpb.GetResponse
-	(*PutResponse)(nil),             // 13: kvpb.PutResponse
-	(*DeleteResponse)(nil),          // 14: kvpb.DeleteResponse
-	(*GetWithRevisionResponse)(nil), // 15: kvpb.GetWithRevisionResponse
-	(*GetHistoryResponse)(nil),      // 16: kvpb.GetHistoryResponse
-	(*RangeResponse)(nil),           // 17: kvpb.RangeResponse
-	(*CompactResponse)(nil),         // 18: kvpb.CompactResponse
-	(*TxnResponse)(nil),             // 19: kvpb.TxnResponse
-	(*WatchEvent)(nil),              // 20: kvpb.WatchEvent
-	(*UnwatchResponse)(nil),         // 21: kvpb.UnwatchResponse
-	(*GetStatsResponse)(nil),        // 22: kvpb.GetStatsResponse
+	(*GetWatchListRequest)(nil),     // 11: kvpb.GetWatchListRequest
+	(*GetStatsRequest)(nil),         // 12: kvpb.GetStatsRequest
+	(*GetResponse)(nil),             // 13: kvpb.GetResponse
+	(*PutResponse)(nil),             // 14: kvpb.PutResponse
+	(*DeleteResponse)(nil),          // 15: kvpb.DeleteResponse
+	(*GetWithRevisionResponse)(nil), // 16: kvpb.GetWithRevisionResponse
+	(*GetHistoryResponse)(nil),      // 17: kvpb.GetHistoryResponse
+	(*RangeResponse)(nil),           // 18: kvpb.RangeResponse
+	(*CompactResponse)(nil),         // 19: kvpb.CompactResponse
+	(*TxnResponse)(nil),             // 20: kvpb.TxnResponse
+	(*WatchEvent)(nil),              // 21: kvpb.WatchEvent
+	(*UnwatchResponse)(nil),         // 22: kvpb.UnwatchResponse
+	(*GetWatchListResponse)(nil),    // 23: kvpb.GetWatchListResponse
+	(*GetStatsResponse)(nil),        // 24: kvpb.GetStatsResponse
 }
 var file_pkg_proto_kvpb_service_kvservice_proto_depIdxs = []int32{
 	0,  // 0: kvpb.KVService.Get:input_type -> kvpb.GetRequest
@@ -78,21 +81,23 @@ var file_pkg_proto_kvpb_service_kvservice_proto_depIdxs = []int32{
 	8,  // 8: kvpb.KVService.Txn:input_type -> kvpb.TxnRequest
 	9,  // 9: kvpb.KVService.Watch:input_type -> kvpb.WatchRequest
 	10, // 10: kvpb.KVService.Unwatch:input_type -> kvpb.UnwatchRequest
-	11, // 11: kvpb.KVService.GetStats:input_type -> kvpb.GetStatsRequest
-	12, // 12: kvpb.KVService.Get:output_type -> kvpb.GetResponse
-	13, // 13: kvpb.KVService.Put:output_type -> kvpb.PutResponse
-	14, // 14: kvpb.KVService.Delete:output_type -> kvpb.DeleteResponse
-	13, // 15: kvpb.KVService.PutWithTTL:output_type -> kvpb.PutResponse
-	15, // 16: kvpb.KVService.GetWithRevision:output_type -> kvpb.GetWithRevisionResponse
-	16, // 17: kvpb.KVService.GetHistory:output_type -> kvpb.GetHistoryResponse
-	17, // 18: kvpb.KVService.Range:output_type -> kvpb.RangeResponse
-	18, // 19: kvpb.KVService.Compact:output_type -> kvpb.CompactResponse
-	19, // 20: kvpb.KVService.Txn:output_type -> kvpb.TxnResponse
-	20, // 21: kvpb.KVService.Watch:output_type -> kvpb.WatchEvent
-	21, // 22: kvpb.KVService.Unwatch:output_type -> kvpb.UnwatchResponse
-	22, // 23: kvpb.KVService.GetStats:output_type -> kvpb.GetStatsResponse
-	12, // [12:24] is the sub-list for method output_type
-	0,  // [0:12] is the sub-list for method input_type
+	11, // 11: kvpb.KVService.GetWatchList:input_type -> kvpb.GetWatchListRequest
+	12, // 12: kvpb.KVService.GetStats:input_type -> kvpb.GetStatsRequest
+	13, // 13: kvpb.KVService.Get:output_type -> kvpb.GetResponse
+	14, // 14: kvpb.KVService.Put:output_type -> kvpb.PutResponse
+	15, // 15: kvpb.KVService.Delete:output_type -> kvpb.DeleteResponse
+	14, // 16: kvpb.KVService.PutWithTTL:output_type -> kvpb.PutResponse
+	16, // 17: kvpb.KVService.GetWithRevision:output_type -> kvpb.GetWithRevisionResponse
+	17, // 18: kvpb.KVService.GetHistory:output_type -> kvpb.GetHistoryResponse
+	18, // 19: kvpb.KVService.Range:output_type -> kvpb.RangeResponse
+	19, // 20: kvpb.KVService.Compact:output_type -> kvpb.CompactResponse
+	20, // 21: kvpb.KVService.Txn:output_type -> kvpb.TxnResponse
+	21, // 22: kvpb.KVService.Watch:output_type -> kvpb.WatchEvent
+	22, // 23: kvpb.KVService.Unwatch:output_type -> kvpb.UnwatchResponse
+	23, // 24: kvpb.KVService.GetWatchList:output_type -> kvpb.GetWatchListResponse
+	24, // 25: kvpb.KVService.GetStats:output_type -> kvpb.GetStatsResponse
+	13, // [13:26] is the sub-list for method output_type
+	0,  // [0:13] is the sub-list for method input_type
 	0,  // [0:0] is the sub-list for extension type_name
 	0,  // [0:0] is the sub-list for extension extendee
 	0,  // [0:0] is the sub-list for field type_name

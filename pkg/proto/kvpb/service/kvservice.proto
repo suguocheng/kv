@@ -54,6 +54,9 @@ service KVService {
   // Unwatch 取消监听
   rpc Unwatch(UnwatchRequest) returns (UnwatchResponse);
   
+  // GetWatchList 获取活跃监听器列表
+  rpc GetWatchList(GetWatchListRequest) returns (GetWatchListResponse);
+  
   // ==================== 系统操作 ====================
   
   // GetStats 获取系统统计信息

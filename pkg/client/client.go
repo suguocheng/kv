@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"sync"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -58,10 +60,12 @@ func (e *WatchEvent) String() string {
 
 // WatchStream 客户端Watch流
 type WatchStream struct {
-	stream kvpb.KVService_WatchClient
-	events chan *WatchEvent
-	errors chan error
-	done   chan struct{}
+	stream   kvpb.KVService_WatchClient
+	events   chan *WatchEvent
+	errors   chan error
+	done     chan struct{}
+	mu       sync.RWMutex
+	isClosed bool
 }
 
 // NewWatchStream 创建新的Watch流
@@ -79,27 +83,44 @@ func NewWatchStream(stream kvpb.KVService_WatchClient) *WatchStream {
 
 // readEvents 读取事件流
 func (ws *WatchStream) readEvents() {
-	defer close(ws.events)
-	defer close(ws.errors)
-	defer close(ws.done)
+	defer func() {
+		ws.mu.Lock()
+		defer ws.mu.Unlock()
+		if !ws.isClosed {
+			ws.isClosed = true
+			close(ws.events)
+			close(ws.errors)
+			close(ws.done)
+		}
+	}()
 
 	for {
-		watchEvent, err := ws.stream.Recv()
-		if err != nil {
-			ws.errors <- fmt.Errorf("read error: %v", err)
+		select {
+		case <-ws.done:
 			return
-		}
+		default:
+			watchEvent, err := ws.stream.Recv()
+			if err != nil {
+				ws.errors <- fmt.Errorf("read error: %v", err)
+				return
+			}
 
-		// 直接解析WatchEvent
-		event := &WatchEvent{
-			Type:      int(watchEvent.Type),
-			Key:       watchEvent.Key,
-			Value:     watchEvent.Value,
-			Revision:  watchEvent.Revision,
-			Timestamp: watchEvent.Timestamp,
-			TTL:       watchEvent.Ttl,
+			// 直接解析WatchEvent
+			event := &WatchEvent{
+				Type:      int(watchEvent.Type),
+				Key:       watchEvent.Key,
+				Value:     watchEvent.Value,
+				Revision:  watchEvent.Revision,
+				Timestamp: watchEvent.Timestamp,
+				TTL:       watchEvent.Ttl,
+			}
+
+			select {
+			case ws.events <- event:
+			case <-ws.done:
+				return
+			}
 		}
-		ws.events <- event
 	}
 }
 
@@ -115,8 +136,13 @@ func (ws *WatchStream) Errors() <-chan error {
 
 // Close 关闭Watch流
 func (ws *WatchStream) Close() {
-	close(ws.done)
-	ws.stream.CloseSend()
+	ws.mu.Lock()
+	defer ws.mu.Unlock()
+	if !ws.isClosed {
+		ws.isClosed = true
+		close(ws.done)
+		ws.stream.CloseSend()
+	}
 }
 
 func NewClient(servers []string) *Client {
@@ -462,11 +488,6 @@ func (c *Client) Txn(req *kvpb.TxnRequest) (*kvpb.TxnResponse, error) {
 
 // Watch相关方法
 
-// WatchKey 监听指定键的变化
-func (c *Client) WatchKey(key string) (*WatchStream, error) {
-	return c.WatchKeyWithID(key, "")
-}
-
 // WatchKeyWithID 使用指定ID监听键的变化
 func (c *Client) WatchKeyWithID(key, watcherID string) (*WatchStream, error) {
 	req := &kvpb.WatchRequest{
@@ -475,11 +496,6 @@ func (c *Client) WatchKeyWithID(key, watcherID string) (*WatchStream, error) {
 	}
 
 	return c.sendWatchRequest(req)
-}
-
-// WatchPrefix 监听指定前缀的所有键的变化
-func (c *Client) WatchPrefix(prefix string) (*WatchStream, error) {
-	return c.WatchPrefixWithID(prefix, "")
 }
 
 // WatchPrefixWithID 使用指定ID监听前缀的变化
@@ -519,6 +535,24 @@ func (c *Client) sendWatchRequest(req *kvpb.WatchRequest) (*WatchStream, error) 
 func (c *Client) Unwatch(watcherID string) error {
 	ctx := context.Background()
 	req := &kvpb.UnwatchRequest{WatcherId: watcherID}
+	for i := 0; i < len(c.clients); i++ {
+		idx := (c.leader + i) % len(c.clients)
+		if c.clients[idx] == nil {
+			continue
+		}
+		resp, err := c.clients[idx].Unwatch(ctx, req)
+		if err == nil && resp.Success {
+			c.leader = idx
+			return nil // 成功
+		}
+	}
+	return fmt.Errorf("取消监听失败: watcher with ID %s not found", watcherID)
+}
+
+// GetWatchList 获取活跃监听器列表
+func (c *Client) GetWatchList() (*kvpb.GetWatchListResponse, error) {
+	ctx := context.Background()
+	req := &kvpb.GetWatchListRequest{}
 
 	// 尝试所有服务器
 	for i := 0; i < len(c.clients); i++ {
@@ -527,27 +561,14 @@ func (c *Client) Unwatch(watcherID string) error {
 			continue
 		}
 
-		resp, err := c.clients[idx].Unwatch(ctx, req)
+		resp, err := c.clients[idx].GetWatchList(ctx, req)
 		if err != nil {
 			continue
 		}
 
-		if resp.Success {
-			c.leader = idx
-			return nil
-		} else {
-			return fmt.Errorf(resp.Error)
-		}
+		c.leader = idx
+		return resp, nil
 	}
 
-	return fmt.Errorf("no available server")
-}
-
-// GetWatchStats 获取Watch统计信息
-func (c *Client) GetWatchStats() (map[string]interface{}, error) {
-	// 简化处理，返回空统计信息
-	return map[string]interface{}{
-		"active_watchers": 0,
-		"total_events":    0,
-	}, nil
+	return nil, fmt.Errorf("no available server")
 }

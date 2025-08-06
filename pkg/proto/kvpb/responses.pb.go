@@ -310,6 +310,59 @@ func (x *GetHistoryResponse) GetError() string {
 	return ""
 }
 
+// WatcherInfo 监听器信息
+type WatcherInfo struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`         // 监听器ID
+	Target        string                 `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"` // 监听目标（键或前缀）
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WatcherInfo) Reset() {
+	*x = WatcherInfo{}
+	mi := &file_pkg_proto_kvpb_common_responses_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WatcherInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WatcherInfo) ProtoMessage() {}
+
+func (x *WatcherInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_kvpb_common_responses_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WatcherInfo.ProtoReflect.Descriptor instead.
+func (*WatcherInfo) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_kvpb_common_responses_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *WatcherInfo) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *WatcherInfo) GetTarget() string {
+	if x != nil {
+		return x.Target
+	}
+	return ""
+}
+
 // UnwatchResponse 取消监听响应
 type UnwatchResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -321,7 +374,7 @@ type UnwatchResponse struct {
 
 func (x *UnwatchResponse) Reset() {
 	*x = UnwatchResponse{}
-	mi := &file_pkg_proto_kvpb_common_responses_proto_msgTypes[5]
+	mi := &file_pkg_proto_kvpb_common_responses_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -333,7 +386,7 @@ func (x *UnwatchResponse) String() string {
 func (*UnwatchResponse) ProtoMessage() {}
 
 func (x *UnwatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_kvpb_common_responses_proto_msgTypes[5]
+	mi := &file_pkg_proto_kvpb_common_responses_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -346,7 +399,7 @@ func (x *UnwatchResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnwatchResponse.ProtoReflect.Descriptor instead.
 func (*UnwatchResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_kvpb_common_responses_proto_rawDescGZIP(), []int{5}
+	return file_pkg_proto_kvpb_common_responses_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *UnwatchResponse) GetSuccess() bool {
@@ -357,6 +410,59 @@ func (x *UnwatchResponse) GetSuccess() bool {
 }
 
 func (x *UnwatchResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+// GetWatchListResponse 获取监听器列表响应
+type GetWatchListResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Watchers      []*WatcherInfo         `protobuf:"bytes,1,rep,name=watchers,proto3" json:"watchers,omitempty"` // 活跃监听器列表
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`       // 错误信息
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetWatchListResponse) Reset() {
+	*x = GetWatchListResponse{}
+	mi := &file_pkg_proto_kvpb_common_responses_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetWatchListResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetWatchListResponse) ProtoMessage() {}
+
+func (x *GetWatchListResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_proto_kvpb_common_responses_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetWatchListResponse.ProtoReflect.Descriptor instead.
+func (*GetWatchListResponse) Descriptor() ([]byte, []int) {
+	return file_pkg_proto_kvpb_common_responses_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *GetWatchListResponse) GetWatchers() []*WatcherInfo {
+	if x != nil {
+		return x.Watchers
+	}
+	return nil
+}
+
+func (x *GetWatchListResponse) GetError() string {
 	if x != nil {
 		return x.Error
 	}
@@ -374,7 +480,7 @@ type GetStatsResponse struct {
 
 func (x *GetStatsResponse) Reset() {
 	*x = GetStatsResponse{}
-	mi := &file_pkg_proto_kvpb_common_responses_proto_msgTypes[6]
+	mi := &file_pkg_proto_kvpb_common_responses_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -386,7 +492,7 @@ func (x *GetStatsResponse) String() string {
 func (*GetStatsResponse) ProtoMessage() {}
 
 func (x *GetStatsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_kvpb_common_responses_proto_msgTypes[6]
+	mi := &file_pkg_proto_kvpb_common_responses_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -399,7 +505,7 @@ func (x *GetStatsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStatsResponse.ProtoReflect.Descriptor instead.
 func (*GetStatsResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_kvpb_common_responses_proto_rawDescGZIP(), []int{6}
+	return file_pkg_proto_kvpb_common_responses_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetStatsResponse) GetStats() map[string]string {
@@ -438,9 +544,15 @@ const file_pkg_proto_kvpb_common_responses_proto_rawDesc = "" +
 	"\x05error\x18\x04 \x01(\tR\x05error\"W\n" +
 	"\x12GetHistoryResponse\x12+\n" +
 	"\x05items\x18\x01 \x03(\v2\x15.kvpb.VersionedKVPairR\x05items\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\"A\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"5\n" +
+	"\vWatcherInfo\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
+	"\x06target\x18\x02 \x01(\tR\x06target\"A\n" +
 	"\x0fUnwatchResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error\"[\n" +
+	"\x14GetWatchListResponse\x12-\n" +
+	"\bwatchers\x18\x01 \x03(\v2\x11.kvpb.WatcherInfoR\bwatchers\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\"\x9b\x01\n" +
 	"\x10GetStatsResponse\x127\n" +
 	"\x05stats\x18\x01 \x03(\v2!.kvpb.GetStatsResponse.StatsEntryR\x05stats\x12\x14\n" +
@@ -462,26 +574,29 @@ func file_pkg_proto_kvpb_common_responses_proto_rawDescGZIP() []byte {
 	return file_pkg_proto_kvpb_common_responses_proto_rawDescData
 }
 
-var file_pkg_proto_kvpb_common_responses_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_pkg_proto_kvpb_common_responses_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_pkg_proto_kvpb_common_responses_proto_goTypes = []any{
 	(*GetResponse)(nil),             // 0: kvpb.GetResponse
 	(*PutResponse)(nil),             // 1: kvpb.PutResponse
 	(*DeleteResponse)(nil),          // 2: kvpb.DeleteResponse
 	(*GetWithRevisionResponse)(nil), // 3: kvpb.GetWithRevisionResponse
 	(*GetHistoryResponse)(nil),      // 4: kvpb.GetHistoryResponse
-	(*UnwatchResponse)(nil),         // 5: kvpb.UnwatchResponse
-	(*GetStatsResponse)(nil),        // 6: kvpb.GetStatsResponse
-	nil,                             // 7: kvpb.GetStatsResponse.StatsEntry
-	(*VersionedKVPair)(nil),         // 8: kvpb.VersionedKVPair
+	(*WatcherInfo)(nil),             // 5: kvpb.WatcherInfo
+	(*UnwatchResponse)(nil),         // 6: kvpb.UnwatchResponse
+	(*GetWatchListResponse)(nil),    // 7: kvpb.GetWatchListResponse
+	(*GetStatsResponse)(nil),        // 8: kvpb.GetStatsResponse
+	nil,                             // 9: kvpb.GetStatsResponse.StatsEntry
+	(*VersionedKVPair)(nil),         // 10: kvpb.VersionedKVPair
 }
 var file_pkg_proto_kvpb_common_responses_proto_depIdxs = []int32{
-	8, // 0: kvpb.GetHistoryResponse.items:type_name -> kvpb.VersionedKVPair
-	7, // 1: kvpb.GetStatsResponse.stats:type_name -> kvpb.GetStatsResponse.StatsEntry
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	10, // 0: kvpb.GetHistoryResponse.items:type_name -> kvpb.VersionedKVPair
+	5,  // 1: kvpb.GetWatchListResponse.watchers:type_name -> kvpb.WatcherInfo
+	9,  // 2: kvpb.GetStatsResponse.stats:type_name -> kvpb.GetStatsResponse.StatsEntry
+	3,  // [3:3] is the sub-list for method output_type
+	3,  // [3:3] is the sub-list for method input_type
+	3,  // [3:3] is the sub-list for extension type_name
+	3,  // [3:3] is the sub-list for extension extendee
+	0,  // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_pkg_proto_kvpb_common_responses_proto_init() }
@@ -496,7 +611,7 @@ func file_pkg_proto_kvpb_common_responses_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_proto_kvpb_common_responses_proto_rawDesc), len(file_pkg_proto_kvpb_common_responses_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

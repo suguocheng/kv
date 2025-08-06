@@ -50,6 +50,11 @@ message UnwatchRequest {
   string watcher_id = 1;  // 监听器ID
 }
 
+// GetWatchListRequest 获取监听器列表请求
+message GetWatchListRequest {
+  // 空消息，用于获取活跃监听器列表
+}
+
 // ==================== 系统操作请求 ====================
 
 // GetStatsRequest 获取统计信息请求

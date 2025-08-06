@@ -75,6 +75,8 @@ func main() {
 			handleDel(cli, parts[1:])
 		case "PUTTTL":
 			handlePutTTL(cli, parts[1:])
+		case "TXN":
+			handleTxn(cli, parts[1:])
 		case "GETREV":
 			handleGetRevision(cli, parts[1:])
 		case "HISTORY":
@@ -85,14 +87,12 @@ func main() {
 			handleCompact(cli, parts[1:])
 		case "STATS":
 			handleStats(cli)
-		case "TXN":
-			handleTxn(cli, parts[1:])
 		case "WATCH":
 			handleWatch(cli, parts[1:])
 		case "UNWATCH":
 			handleUnwatch(cli, parts[1:])
-		case "WATCHSTATS":
-			handleWatchStats(cli)
+		case "WATCHLIST":
+			handleWatchList(cli)
 		case "HELP":
 			printHelp()
 		default:

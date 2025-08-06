@@ -45,10 +45,22 @@ message GetHistoryResponse {
 
 // ==================== Watch操作响应 ====================
 
+// WatcherInfo 监听器信息
+message WatcherInfo {
+  string id = 1;      // 监听器ID
+  string target = 2;  // 监听目标（键或前缀）
+}
+
 // UnwatchResponse 取消监听响应
 message UnwatchResponse {
   bool success = 1;  // 是否成功
   string error = 2;  // 错误信息
+}
+
+// GetWatchListResponse 获取监听器列表响应
+message GetWatchListResponse {
+  repeated WatcherInfo watchers = 1;  // 活跃监听器列表
+  string error = 2;                   // 错误信息
 }
 
 // ==================== 系统操作响应 ====================

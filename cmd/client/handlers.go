@@ -7,6 +7,7 @@ import (
 	"kv/pkg/proto/kvpb"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // handleGet 处理GET命令
@@ -54,28 +55,6 @@ func handlePut(cli *client.Client, args []string) {
 	}
 }
 
-// handleDel 处理DEL命令
-func handleDel(cli *client.Client, args []string) {
-	if len(args) != 1 {
-		fmt.Println("用法: DEL key")
-		return
-	}
-
-	key := args[0]
-	ctx := context.Background()
-	resp, err := cli.Delete(ctx, key)
-	if err != nil {
-		fmt.Printf("删除失败: %v\n", err)
-		return
-	}
-
-	if resp == "OK" {
-		fmt.Printf("成功删除键 '%s'\n", key)
-	} else {
-		fmt.Printf("删除响应: %s\n", resp)
-	}
-}
-
 // handlePutTTL 处理PUTTTL命令
 func handlePutTTL(cli *client.Client, args []string) {
 	if len(args) != 3 {
@@ -108,153 +87,25 @@ func handlePutTTL(cli *client.Client, args []string) {
 	}
 }
 
-// handleGetRevision 处理版本查询
-func handleGetRevision(cli *client.Client, args []string) {
-	if len(args) != 2 {
-		fmt.Println("用法: GETREV key revision")
-		return
-	}
-
-	key := args[0]
-	revision, err := strconv.ParseInt(args[1], 10, 64)
-	if err != nil {
-		fmt.Println("版本号必须是数字")
-		return
-	}
-
-	value, rev, err := cli.GetWithRevision(key, revision)
-	if err != nil {
-		fmt.Printf("查询版本失败: %v\n", err)
-		return
-	}
-
-	fmt.Printf("键: %s, 版本: %d, 值: %s\n", key, rev, value)
-}
-
-// handleGetHistory 处理历史查询
-func handleGetHistory(cli *client.Client, args []string) {
-	if len(args) < 1 || len(args) > 2 {
-		fmt.Println("用法: HISTORY key [limit]")
-		return
-	}
-
-	key := args[0]
-	limit := int64(10) // 默认显示10个版本
-
-	if len(args) == 2 {
-		var err error
-		limit, err = strconv.ParseInt(args[1], 10, 64)
-		if err != nil {
-			fmt.Println("限制数量必须是数字")
-			return
-		}
-	}
-
-	history, err := cli.GetHistory(key, limit)
-	if err != nil {
-		fmt.Printf("获取历史失败: %v\n", err)
-		return
-	}
-
-	fmt.Printf("键 '%s' 的版本历史 (共%d个版本):\n", key, len(history))
-	for i, version := range history {
-		status := "正常"
-		if version.Deleted {
-			status = "已删除"
-		}
-		fmt.Printf("  版本%d: 值='%s', 修改版本=%d, 创建版本=%d, 状态=%s\n",
-			i+1, version.Value, version.ModRev, version.CreatedRev, status)
-	}
-}
-
-// handleRange 处理范围查询
-func handleRange(cli *client.Client, args []string) {
-	if len(args) < 2 || len(args) > 4 {
-		fmt.Println("用法: RANGE start end [revision] [limit]")
-		return
-	}
-
-	start := args[0]
-	end := args[1]
-	revision := int64(0)
-	limit := int64(100)
-
-	if len(args) >= 3 {
-		var err error
-		revision, err = strconv.ParseInt(args[2], 10, 64)
-		if err != nil {
-			fmt.Println("版本号必须是数字")
-			return
-		}
-	}
-
-	if len(args) >= 4 {
-		var err error
-		limit, err = strconv.ParseInt(args[3], 10, 64)
-		if err != nil {
-			fmt.Println("限制数量必须是数字")
-			return
-		}
-	}
-
-	results, _, err := cli.Range(start, end, revision, limit)
-	if err != nil {
-		fmt.Printf("范围查询失败: %v\n", err)
-		return
-	}
-
-	if revision > 0 {
-		fmt.Printf("范围 [%s, %s) 在版本 %d 的查询结果 (共%d个):\n", start, end, revision, len(results))
-	} else {
-		fmt.Printf("范围 [%s, %s) 的查询结果 (共%d个):\n", start, end, len(results))
-	}
-
-	for _, result := range results {
-		status := "正常"
-		if result.Deleted {
-			status = "已删除"
-		}
-		fmt.Printf("  %s = %s (版本=%d, 状态=%s)\n", result.Key, result.Value, result.ModRev, status)
-	}
-}
-
-// handleCompact 处理压缩操作
-func handleCompact(cli *client.Client, args []string) {
+// handleDel 处理DEL命令
+func handleDel(cli *client.Client, args []string) {
 	if len(args) != 1 {
-		fmt.Println("用法: COMPACT revision")
+		fmt.Println("用法: DEL key")
 		return
 	}
 
-	revision, err := strconv.ParseInt(args[0], 10, 64)
+	key := args[0]
+	ctx := context.Background()
+	resp, err := cli.Delete(ctx, key)
 	if err != nil {
-		fmt.Println("版本号必须是数字")
+		fmt.Printf("删除失败: %v\n", err)
 		return
 	}
 
-	compactedRev, err := cli.Compact(revision)
-	if err != nil {
-		fmt.Printf("压缩失败: %v\n", err)
-		return
-	}
-
-	fmt.Printf("压缩完成，实际压缩到版本: %d\n", compactedRev)
-}
-
-// handleStats 处理统计信息
-func handleStats(cli *client.Client) {
-	stats, err := cli.GetStats()
-	if err != nil {
-		fmt.Printf("获取统计信息失败: %v\n", err)
-		return
-	}
-
-	fmt.Println("=== 统计信息 ===")
-	fmt.Printf("当前版本: %v\n", stats["current_revision"])
-	fmt.Printf("压缩版本: %v\n", stats["compacted_revision"])
-	fmt.Printf("总键数: %v\n", stats["total_keys"])
-	fmt.Printf("总版本数: %v\n", stats["total_versions"])
-	if level, ok := stats["level"]; ok {
-		fmt.Printf("跳表层数: %v\n", level)
+	if resp == "OK" {
+		fmt.Printf("成功删除键 '%s'\n", key)
+	} else {
+		fmt.Printf("删除响应: %s\n", resp)
 	}
 }
 
@@ -408,102 +259,6 @@ func formatTxnResponse(resp *kvpb.TxnResponse) string {
 	}
 }
 
-// handleWatch 处理Watch命令
-func handleWatch(cli *client.Client, args []string) {
-	if len(args) < 1 {
-		fmt.Println("用法: WATCH key|prefix [watcher_id]")
-		fmt.Println("  例如: WATCH user:1")
-		fmt.Println("  例如: WATCH user: my-watcher-1")
-		return
-	}
-
-	key := args[0]
-	var watcherID string
-	if len(args) >= 2 {
-		watcherID = args[1]
-	}
-
-	var stream *client.WatchStream
-	var err error
-
-	// 判断是键还是前缀
-	if strings.HasSuffix(key, ":") {
-		// 前缀监听
-		if watcherID != "" {
-			stream, err = cli.WatchPrefixWithID(key, watcherID)
-		} else {
-			stream, err = cli.WatchPrefix(key)
-		}
-	} else {
-		// 键监听
-		if watcherID != "" {
-			stream, err = cli.WatchKeyWithID(key, watcherID)
-		} else {
-			stream, err = cli.WatchKey(key)
-		}
-	}
-
-	if err != nil {
-		fmt.Printf("创建监听器失败: %v\n", err)
-		return
-	}
-
-	fmt.Printf("开始监听 %s...\n", key)
-	if watcherID != "" {
-		fmt.Printf("监听器ID: %s\n", watcherID)
-	}
-
-	// 启动事件监听
-	go func() {
-		defer stream.Close()
-
-		for {
-			select {
-			case event := <-stream.Events():
-				fmt.Printf("事件: %s\n", event.String())
-			case err := <-stream.Errors():
-				fmt.Printf("监听错误: %v\n", err)
-				return
-			}
-		}
-	}()
-}
-
-// handleUnwatch 处理Unwatch命令
-func handleUnwatch(cli *client.Client, args []string) {
-	if len(args) != 1 {
-		fmt.Println("用法: UNWATCH watcher_id")
-		return
-	}
-
-	watcherID := args[0]
-	err := cli.Unwatch(watcherID)
-	if err != nil {
-		fmt.Printf("取消监听失败: %v\n", err)
-		return
-	}
-
-	fmt.Printf("成功取消监听器: %s\n", watcherID)
-}
-
-// handleWatchStats 处理Watch统计信息命令
-func handleWatchStats(cli *client.Client) {
-	stats, err := cli.GetWatchStats()
-	if err != nil {
-		fmt.Printf("获取Watch统计信息失败: %v\n", err)
-		return
-	}
-
-	fmt.Println("\nWatch统计信息:")
-	fmt.Println("-------------------------------")
-	fmt.Printf("%-20s | %s\n", "名称", "数值")
-	fmt.Println("-------------------------------")
-	for key, value := range stats {
-		fmt.Printf("%-20s | %v\n", key, value)
-	}
-	fmt.Println("-------------------------------")
-}
-
 // handleTxn 处理 TXN 命令
 func handleTxn(cli *client.Client, args []string) {
 	if len(args) == 0 {
@@ -542,4 +297,258 @@ func handleTxn(cli *client.Client, args []string) {
 			fmt.Printf("批量操作结果: %s\n", formatTxnResponse(resp))
 		}
 	}
+}
+
+// handleGetRevision 处理版本查询
+func handleGetRevision(cli *client.Client, args []string) {
+	if len(args) != 2 {
+		fmt.Println("用法: GETREV key revision")
+		return
+	}
+
+	key := args[0]
+	revision, err := strconv.ParseInt(args[1], 10, 64)
+	if err != nil {
+		fmt.Println("版本号必须是数字")
+		return
+	}
+
+	value, rev, err := cli.GetWithRevision(key, revision)
+	if err != nil {
+		fmt.Printf("查询版本失败: %v\n", err)
+		return
+	}
+
+	fmt.Printf("键: %s, 版本: %d, 值: %s\n", key, rev, value)
+}
+
+// handleGetHistory 处理历史查询
+func handleGetHistory(cli *client.Client, args []string) {
+	if len(args) < 1 || len(args) > 2 {
+		fmt.Println("用法: HISTORY key [limit]")
+		return
+	}
+
+	key := args[0]
+	limit := int64(10) // 默认显示10个版本
+
+	if len(args) == 2 {
+		var err error
+		limit, err = strconv.ParseInt(args[1], 10, 64)
+		if err != nil {
+			fmt.Println("限制数量必须是数字")
+			return
+		}
+	}
+
+	history, err := cli.GetHistory(key, limit)
+	if err != nil {
+		fmt.Printf("获取历史失败: %v\n", err)
+		return
+	}
+
+	fmt.Printf("键 '%s' 的版本历史 (共%d个版本):\n", key, len(history))
+	for i, version := range history {
+		status := "正常"
+		if version.Deleted {
+			status = "已删除"
+		}
+		fmt.Printf("  版本%d: 值='%s', 修改版本=%d, 创建版本=%d, 状态=%s\n",
+			i+1, version.Value, version.ModRev, version.CreatedRev, status)
+	}
+}
+
+// handleRange 处理范围查询
+func handleRange(cli *client.Client, args []string) {
+	if len(args) < 2 || len(args) > 4 {
+		fmt.Println("用法: RANGE start end [revision] [limit]")
+		return
+	}
+
+	start := args[0]
+	end := args[1]
+	revision := int64(0)
+	limit := int64(100)
+
+	if len(args) >= 3 {
+		var err error
+		revision, err = strconv.ParseInt(args[2], 10, 64)
+		if err != nil {
+			fmt.Println("版本号必须是数字")
+			return
+		}
+	}
+
+	if len(args) >= 4 {
+		var err error
+		limit, err = strconv.ParseInt(args[3], 10, 64)
+		if err != nil {
+			fmt.Println("限制数量必须是数字")
+			return
+		}
+	}
+
+	results, _, err := cli.Range(start, end, revision, limit)
+	if err != nil {
+		fmt.Printf("范围查询失败: %v\n", err)
+		return
+	}
+
+	if revision > 0 {
+		fmt.Printf("范围 [%s, %s) 在版本 %d 的查询结果 (共%d个):\n", start, end, revision, len(results))
+	} else {
+		fmt.Printf("范围 [%s, %s) 的查询结果 (共%d个):\n", start, end, len(results))
+	}
+
+	for _, result := range results {
+		status := "正常"
+		if result.Deleted {
+			status = "已删除"
+		}
+		fmt.Printf("  %s = %s (版本=%d, 状态=%s)\n", result.Key, result.Value, result.ModRev, status)
+	}
+}
+
+// handleCompact 处理压缩操作
+func handleCompact(cli *client.Client, args []string) {
+	if len(args) != 1 {
+		fmt.Println("用法: COMPACT revision")
+		return
+	}
+
+	revision, err := strconv.ParseInt(args[0], 10, 64)
+	if err != nil {
+		fmt.Println("版本号必须是数字")
+		return
+	}
+
+	compactedRev, err := cli.Compact(revision)
+	if err != nil {
+		fmt.Printf("压缩失败: %v\n", err)
+		return
+	}
+
+	fmt.Printf("压缩完成，实际压缩到版本: %d\n", compactedRev)
+}
+
+// handleStats 处理统计信息
+func handleStats(cli *client.Client) {
+	stats, err := cli.GetStats()
+	if err != nil {
+		fmt.Printf("获取统计信息失败: %v\n", err)
+		return
+	}
+
+	fmt.Println("=== 统计信息 ===")
+	fmt.Printf("当前版本: %v\n", stats["current_revision"])
+	fmt.Printf("压缩版本: %v\n", stats["compacted_revision"])
+	fmt.Printf("总键数: %v\n", stats["total_keys"])
+	fmt.Printf("总版本数: %v\n", stats["total_versions"])
+	if level, ok := stats["level"]; ok {
+		fmt.Printf("跳表层数: %v\n", level)
+	}
+}
+
+// handleWatch 处理Watch命令
+func handleWatch(cli *client.Client, args []string) {
+	if len(args) < 1 {
+		fmt.Println("用法: WATCH key|prefix [watcher_id]")
+		fmt.Println("  例如: WATCH user:1")
+		fmt.Println("  例如: WATCH user: my-watcher-1")
+		return
+	}
+
+	key := args[0]
+	var watcherID string
+	if len(args) >= 2 {
+		watcherID = args[1]
+	} else {
+		// 自动生成watcher_id
+		watcherID = fmt.Sprintf("watch_%d", time.Now().Unix())
+	}
+
+	var stream *client.WatchStream
+	var err error
+
+	// 判断是键还是前缀
+	if strings.HasSuffix(key, ":") {
+		// 前缀监听
+		stream, err = cli.WatchPrefixWithID(key, watcherID)
+	} else {
+		// 键监听
+		stream, err = cli.WatchKeyWithID(key, watcherID)
+	}
+
+	if err != nil {
+		fmt.Printf("创建监听器失败: %v\n", err)
+		return
+	}
+
+	fmt.Printf("开始监听 %s...\n", key)
+	fmt.Printf("监听器ID: %s\n", watcherID)
+
+	// 启动事件监听
+	go func() {
+		defer stream.Close()
+
+		for {
+			select {
+			case event := <-stream.Events():
+				fmt.Printf("事件: %s\n", event.String())
+			case err := <-stream.Errors():
+				// 检查是否是正常关闭（EOF错误）
+				if err != nil && strings.Contains(err.Error(), "EOF") {
+					// 正常关闭，不显示错误
+					return
+				}
+				fmt.Printf("监听错误: %v\n", err)
+				return
+			}
+		}
+	}()
+}
+
+// handleUnwatch 处理Unwatch命令
+func handleUnwatch(cli *client.Client, args []string) {
+	if len(args) != 1 {
+		fmt.Println("用法: UNWATCH watcher_id")
+		return
+	}
+
+	watcherID := args[0]
+	err := cli.Unwatch(watcherID)
+	if err != nil {
+		fmt.Printf("取消监听失败: %v\n", err)
+		return
+	}
+
+	fmt.Printf("成功取消监听器: %s\n", watcherID)
+}
+
+// handleWatchList 处理Watch列表命令
+func handleWatchList(cli *client.Client) {
+	resp, err := cli.GetWatchList()
+	if err != nil {
+		fmt.Printf("获取Watch列表失败: %v\n", err)
+		return
+	}
+
+	if resp.Error != "" {
+		fmt.Printf("获取Watch列表失败: %s\n", resp.Error)
+		return
+	}
+
+	fmt.Println("\n活跃监听器列表:")
+	fmt.Println("-------------------------------")
+	fmt.Printf("%-20s | %s\n", "监听器ID", "监听目标")
+	fmt.Println("-------------------------------")
+
+	if len(resp.Watchers) == 0 {
+		fmt.Println("暂无活跃监听器")
+	} else {
+		for _, watcher := range resp.Watchers {
+			fmt.Printf("%-20s | %s\n", watcher.Id, watcher.Target)
+		}
+	}
+	fmt.Println("-------------------------------")
 }

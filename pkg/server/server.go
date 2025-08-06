@@ -62,6 +62,22 @@ func (s *KVServer) Put(ctx context.Context, req *kvpb.PutRequest) (*kvpb.PutResp
 	return &kvpb.PutResponse{Revision: 1}, nil // 简化处理，实际应该等待raft应用完成
 }
 
+// PutWithTTL 实现PutWithTTL RPC
+func (s *KVServer) PutWithTTL(ctx context.Context, req *kvpb.PutWithTTLRequest) (*kvpb.PutResponse, error) {
+	op := &kvpb.Op{Type: "PUT", Key: req.Key, Value: []byte(req.Value), Ttl: req.Ttl}
+	data, err := proto.Marshal(op)
+	if err != nil {
+		return &kvpb.PutResponse{Error: "marshal failed"}, nil
+	}
+
+	_, _, isLeader := s.rf.Start(data)
+	if !isLeader {
+		return &kvpb.PutResponse{Error: "Not_Leader"}, nil
+	}
+
+	return &kvpb.PutResponse{Revision: 1}, nil
+}
+
 // Delete 实现Delete RPC
 func (s *KVServer) Delete(ctx context.Context, req *kvpb.DeleteRequest) (*kvpb.DeleteResponse, error) {
 	op := &kvpb.Op{Type: "DELETE", Key: req.Key, Value: []byte{}, Ttl: 0}
@@ -78,20 +94,43 @@ func (s *KVServer) Delete(ctx context.Context, req *kvpb.DeleteRequest) (*kvpb.D
 	return &kvpb.DeleteResponse{Revision: 1}, nil
 }
 
-// PutWithTTL 实现PutWithTTL RPC
-func (s *KVServer) PutWithTTL(ctx context.Context, req *kvpb.PutWithTTLRequest) (*kvpb.PutResponse, error) {
-	op := &kvpb.Op{Type: "PUT", Key: req.Key, Value: []byte(req.Value), Ttl: req.Ttl}
-	data, err := proto.Marshal(op)
+// Txn 实现Txn RPC
+func (s *KVServer) Txn(ctx context.Context, req *kvpb.TxnRequest) (*kvpb.TxnResponse, error) {
+	txnBytes, _ := proto.Marshal(req)
+	op := &kvpb.Op{
+		Type:  "Txn",
+		Key:   "txn",
+		Value: txnBytes,
+		Ttl:   1,
+	}
+	opData, err := proto.Marshal(op)
 	if err != nil {
-		return &kvpb.PutResponse{Error: "marshal failed"}, nil
+		return nil, status.Error(codes.Internal, "marshal failed")
 	}
 
-	_, _, isLeader := s.rf.Start(data)
+	index, _, isLeader := s.rf.Start(opData)
 	if !isLeader {
-		return &kvpb.PutResponse{Error: "Not_Leader"}, nil
+		return nil, status.Error(codes.FailedPrecondition, "Not_Leader")
 	}
 
-	return &kvpb.PutResponse{Revision: 1}, nil
+	// 等待raft应用完成
+	if !s.rf.WaitForIndex(index, 5*time.Second) {
+		return nil, status.Error(codes.DeadlineExceeded, "timeout")
+	}
+
+	// 检查是否仍然是leader
+	_, stillLeader := s.rf.GetState()
+	if !stillLeader {
+		return nil, status.Error(codes.FailedPrecondition, "Not_Leader")
+	}
+
+	// 获取事务结果
+	resp, err := s.kv.TxnWithoutWAL(req)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return resp, nil
 }
 
 // GetWithRevision 实现GetWithRevision RPC
@@ -181,43 +220,16 @@ func (s *KVServer) Compact(ctx context.Context, req *kvpb.CompactRequest) (*kvpb
 	return &kvpb.CompactResponse{Revision: compactedRev}, nil
 }
 
-// Txn 实现Txn RPC
-func (s *KVServer) Txn(ctx context.Context, req *kvpb.TxnRequest) (*kvpb.TxnResponse, error) {
-	txnBytes, _ := proto.Marshal(req)
-	op := &kvpb.Op{
-		Type:  "Txn",
-		Key:   "txn",
-		Value: txnBytes,
-		Ttl:   1,
-	}
-	opData, err := proto.Marshal(op)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "marshal failed")
+// GetStats 实现GetStats RPC
+func (s *KVServer) GetStats(ctx context.Context, req *kvpb.GetStatsRequest) (*kvpb.GetStatsResponse, error) {
+	stats := s.kv.GetStats()
+
+	statsMap := make(map[string]string)
+	for key, value := range stats {
+		statsMap[fmt.Sprintf("%v", key)] = fmt.Sprintf("%v", value)
 	}
 
-	index, _, isLeader := s.rf.Start(opData)
-	if !isLeader {
-		return nil, status.Error(codes.FailedPrecondition, "Not_Leader")
-	}
-
-	// 等待raft应用完成
-	if !s.rf.WaitForIndex(index, 5*time.Second) {
-		return nil, status.Error(codes.DeadlineExceeded, "timeout")
-	}
-
-	// 检查是否仍然是leader
-	_, stillLeader := s.rf.GetState()
-	if !stillLeader {
-		return nil, status.Error(codes.FailedPrecondition, "Not_Leader")
-	}
-
-	// 获取事务结果
-	resp, err := s.kv.TxnWithoutWAL(req)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return resp, nil
+	return &kvpb.GetStatsResponse{Stats: statsMap}, nil
 }
 
 // Watch 实现Watch RPC (流式)
@@ -249,7 +261,15 @@ func (s *KVServer) Watch(req *kvpb.WatchRequest, stream kvpb.KVService_WatchServ
 	// 监听事件并发送
 	for {
 		select {
-		case event := <-watcher.Events:
+		case event, ok := <-watcher.Events:
+			if !ok {
+				// 通道已关闭
+				return nil
+			}
+			if event == nil {
+				// 跳过nil事件
+				continue
+			}
 			// 直接发送WatchEvent
 			watchEvent := &kvpb.WatchEvent{
 				Type:      int32(event.Type),
@@ -292,16 +312,25 @@ func (s *KVServer) Unwatch(ctx context.Context, req *kvpb.UnwatchRequest) (*kvpb
 	return &kvpb.UnwatchResponse{Success: true}, nil
 }
 
-// GetStats 实现GetStats RPC
-func (s *KVServer) GetStats(ctx context.Context, req *kvpb.GetStatsRequest) (*kvpb.GetStatsResponse, error) {
-	stats := s.kv.GetStats()
+// GetWatchList 实现GetWatchList RPC
+func (s *KVServer) GetWatchList(ctx context.Context, req *kvpb.GetWatchListRequest) (*kvpb.GetWatchListResponse, error) {
+	watchers := s.kv.ListWatchers()
 
-	statsMap := make(map[string]string)
-	for key, value := range stats {
-		statsMap[fmt.Sprintf("%v", key)] = fmt.Sprintf("%v", value)
+	var watcherInfos []*kvpb.WatcherInfo
+	for _, watcher := range watchers {
+		if !watcher.IsClosed() {
+			target := watcher.Key
+			if target == "" {
+				target = watcher.Prefix + "*" // 前缀监听用*表示
+			}
+			watcherInfos = append(watcherInfos, &kvpb.WatcherInfo{
+				Id:     watcher.ID,
+				Target: target,
+			})
+		}
 	}
 
-	return &kvpb.GetStatsResponse{Stats: statsMap}, nil
+	return &kvpb.GetWatchListResponse{Watchers: watcherInfos}, nil
 }
 
 // StartGRPCServer 启动gRPC服务器

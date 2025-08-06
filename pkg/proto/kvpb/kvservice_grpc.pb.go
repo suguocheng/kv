@@ -30,6 +30,7 @@ const (
 	KVService_Txn_FullMethodName             = "/kvpb.KVService/Txn"
 	KVService_Watch_FullMethodName           = "/kvpb.KVService/Watch"
 	KVService_Unwatch_FullMethodName         = "/kvpb.KVService/Unwatch"
+	KVService_GetWatchList_FullMethodName    = "/kvpb.KVService/GetWatchList"
 	KVService_GetStats_FullMethodName        = "/kvpb.KVService/GetStats"
 )
 
@@ -62,6 +63,8 @@ type KVServiceClient interface {
 	Watch(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[WatchEvent], error)
 	// Unwatch 取消监听
 	Unwatch(ctx context.Context, in *UnwatchRequest, opts ...grpc.CallOption) (*UnwatchResponse, error)
+	// GetWatchList 获取活跃监听器列表
+	GetWatchList(ctx context.Context, in *GetWatchListRequest, opts ...grpc.CallOption) (*GetWatchListResponse, error)
 	// GetStats 获取系统统计信息
 	GetStats(ctx context.Context, in *GetStatsRequest, opts ...grpc.CallOption) (*GetStatsResponse, error)
 }
@@ -193,6 +196,16 @@ func (c *kVServiceClient) Unwatch(ctx context.Context, in *UnwatchRequest, opts 
 	return out, nil
 }
 
+func (c *kVServiceClient) GetWatchList(ctx context.Context, in *GetWatchListRequest, opts ...grpc.CallOption) (*GetWatchListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetWatchListResponse)
+	err := c.cc.Invoke(ctx, KVService_GetWatchList_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *kVServiceClient) GetStats(ctx context.Context, in *GetStatsRequest, opts ...grpc.CallOption) (*GetStatsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetStatsResponse)
@@ -232,6 +245,8 @@ type KVServiceServer interface {
 	Watch(*WatchRequest, grpc.ServerStreamingServer[WatchEvent]) error
 	// Unwatch 取消监听
 	Unwatch(context.Context, *UnwatchRequest) (*UnwatchResponse, error)
+	// GetWatchList 获取活跃监听器列表
+	GetWatchList(context.Context, *GetWatchListRequest) (*GetWatchListResponse, error)
 	// GetStats 获取系统统计信息
 	GetStats(context.Context, *GetStatsRequest) (*GetStatsResponse, error)
 	mustEmbedUnimplementedKVServiceServer()
@@ -276,6 +291,9 @@ func (UnimplementedKVServiceServer) Watch(*WatchRequest, grpc.ServerStreamingSer
 }
 func (UnimplementedKVServiceServer) Unwatch(context.Context, *UnwatchRequest) (*UnwatchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Unwatch not implemented")
+}
+func (UnimplementedKVServiceServer) GetWatchList(context.Context, *GetWatchListRequest) (*GetWatchListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetWatchList not implemented")
 }
 func (UnimplementedKVServiceServer) GetStats(context.Context, *GetStatsRequest) (*GetStatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetStats not implemented")
@@ -492,6 +510,24 @@ func _KVService_Unwatch_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KVService_GetWatchList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetWatchListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KVServiceServer).GetWatchList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KVService_GetWatchList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KVServiceServer).GetWatchList(ctx, req.(*GetWatchListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _KVService_GetStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetStatsRequest)
 	if err := dec(in); err != nil {
@@ -556,6 +592,10 @@ var KVService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Unwatch",
 			Handler:    _KVService_Unwatch_Handler,
+		},
+		{
+			MethodName: "GetWatchList",
+			Handler:    _KVService_GetWatchList_Handler,
 		},
 		{
 			MethodName: "GetStats",
