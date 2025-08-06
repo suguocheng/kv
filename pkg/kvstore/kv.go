@@ -153,7 +153,11 @@ func (kv *KV) Put(key, value string) error {
 	fmt.Printf("[KV] Put: key=%s value=%s\n", key, value)
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
-	_, err := kv.store.Put(key, value, 0)
+	revision, err := kv.store.Put(key, value, 0)
+	if err == nil {
+		// 通知Watch监听器
+		kv.watcher.NotifyPut(key, value, revision, 0)
+	}
 	return err
 }
 
@@ -161,7 +165,11 @@ func (kv *KV) PutWithTTL(key, value string, ttl int64) error {
 	fmt.Printf("[KV] PutWithTTL: key=%s value=%s ttl=%d\n", key, value, ttl)
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
-	_, err := kv.store.Put(key, value, ttl)
+	revision, err := kv.store.Put(key, value, ttl)
+	if err == nil {
+		// 通知Watch监听器
+		kv.watcher.NotifyPut(key, value, revision, ttl)
+	}
 	return err
 }
 
@@ -177,7 +185,11 @@ func (kv *KV) Delete(key string) error {
 	fmt.Printf("[KV] Delete: key=%s\n", key)
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
-	_, err := kv.store.Delete(key)
+	revision, err := kv.store.Delete(key)
+	if err == nil {
+		// 通知Watch监听器
+		kv.watcher.NotifyDelete(key, revision)
+	}
 	return err
 }
 
@@ -522,13 +534,10 @@ func (kv *KV) ApplyWALEntry(entry *kvpb.WALEntry) error {
 	// 这里不再加锁，由ReplayWALsFrom统一加锁
 	// 其余分支不再打印[WAL]日志
 	switch op.Type {
-	case "Put":
-		_, err := kv.store.Put(op.Key, string(op.Value), 0)
-		return err
-	case "PutTTL":
+	case "PUT":
 		_, err := kv.store.Put(op.Key, string(op.Value), op.Ttl)
 		return err
-	case "Del":
+	case "DELETE":
 		_, err := kv.store.Delete(op.Key)
 		return err
 	case "Txn":

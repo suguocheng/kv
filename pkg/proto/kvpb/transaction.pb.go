@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v3.21.12
-// source: pkg/proto/kvpb/transaction.proto
+// source: pkg/proto/kvpb/transaction/transaction.proto
 
 package kvpb
 
@@ -21,7 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// 比较操作类型
+// CompareResult 比较操作类型
 type CompareResult int32
 
 const (
@@ -64,11 +64,11 @@ func (x CompareResult) String() string {
 }
 
 func (CompareResult) Descriptor() protoreflect.EnumDescriptor {
-	return file_pkg_proto_kvpb_transaction_proto_enumTypes[0].Descriptor()
+	return file_pkg_proto_kvpb_transaction_transaction_proto_enumTypes[0].Descriptor()
 }
 
 func (CompareResult) Type() protoreflect.EnumType {
-	return &file_pkg_proto_kvpb_transaction_proto_enumTypes[0]
+	return &file_pkg_proto_kvpb_transaction_transaction_proto_enumTypes[0]
 }
 
 func (x CompareResult) Number() protoreflect.EnumNumber {
@@ -77,10 +77,10 @@ func (x CompareResult) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use CompareResult.Descriptor instead.
 func (CompareResult) EnumDescriptor() ([]byte, []int) {
-	return file_pkg_proto_kvpb_transaction_proto_rawDescGZIP(), []int{0}
+	return file_pkg_proto_kvpb_transaction_transaction_proto_rawDescGZIP(), []int{0}
 }
 
-// 比较目标类型
+// CompareTarget 比较目标类型
 type CompareTarget int32
 
 const (
@@ -120,11 +120,11 @@ func (x CompareTarget) String() string {
 }
 
 func (CompareTarget) Descriptor() protoreflect.EnumDescriptor {
-	return file_pkg_proto_kvpb_transaction_proto_enumTypes[1].Descriptor()
+	return file_pkg_proto_kvpb_transaction_transaction_proto_enumTypes[1].Descriptor()
 }
 
 func (CompareTarget) Type() protoreflect.EnumType {
-	return &file_pkg_proto_kvpb_transaction_proto_enumTypes[1]
+	return &file_pkg_proto_kvpb_transaction_transaction_proto_enumTypes[1]
 }
 
 func (x CompareTarget) Number() protoreflect.EnumNumber {
@@ -133,10 +133,10 @@ func (x CompareTarget) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use CompareTarget.Descriptor instead.
 func (CompareTarget) EnumDescriptor() ([]byte, []int) {
-	return file_pkg_proto_kvpb_transaction_proto_rawDescGZIP(), []int{1}
+	return file_pkg_proto_kvpb_transaction_transaction_proto_rawDescGZIP(), []int{1}
 }
 
-// 单个比较条件
+// Compare 单个比较条件
 type Compare struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`                                // 要比较的键
@@ -150,7 +150,7 @@ type Compare struct {
 
 func (x *Compare) Reset() {
 	*x = Compare{}
-	mi := &file_pkg_proto_kvpb_transaction_proto_msgTypes[0]
+	mi := &file_pkg_proto_kvpb_transaction_transaction_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -162,7 +162,7 @@ func (x *Compare) String() string {
 func (*Compare) ProtoMessage() {}
 
 func (x *Compare) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_kvpb_transaction_proto_msgTypes[0]
+	mi := &file_pkg_proto_kvpb_transaction_transaction_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -175,7 +175,7 @@ func (x *Compare) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Compare.ProtoReflect.Descriptor instead.
 func (*Compare) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_kvpb_transaction_proto_rawDescGZIP(), []int{0}
+	return file_pkg_proto_kvpb_transaction_transaction_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Compare) GetKey() string {
@@ -213,7 +213,7 @@ func (x *Compare) GetVersion() int64 {
 	return 0
 }
 
-// 事务操作
+// TxnRequest 事务请求
 type TxnRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Compare       []*Compare             `protobuf:"bytes,1,rep,name=compare,proto3" json:"compare,omitempty"` // 比较条件
@@ -225,7 +225,7 @@ type TxnRequest struct {
 
 func (x *TxnRequest) Reset() {
 	*x = TxnRequest{}
-	mi := &file_pkg_proto_kvpb_transaction_proto_msgTypes[1]
+	mi := &file_pkg_proto_kvpb_transaction_transaction_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -237,7 +237,7 @@ func (x *TxnRequest) String() string {
 func (*TxnRequest) ProtoMessage() {}
 
 func (x *TxnRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_kvpb_transaction_proto_msgTypes[1]
+	mi := &file_pkg_proto_kvpb_transaction_transaction_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -250,7 +250,7 @@ func (x *TxnRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TxnRequest.ProtoReflect.Descriptor instead.
 func (*TxnRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_kvpb_transaction_proto_rawDescGZIP(), []int{1}
+	return file_pkg_proto_kvpb_transaction_transaction_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *TxnRequest) GetCompare() []*Compare {
@@ -274,7 +274,7 @@ func (x *TxnRequest) GetFailure() []*Op {
 	return nil
 }
 
-// 事务响应
+// TxnResponse 事务响应
 type TxnResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Succeeded     bool                   `protobuf:"varint,1,opt,name=succeeded,proto3" json:"succeeded,omitempty"` // 事务是否成功
@@ -285,7 +285,7 @@ type TxnResponse struct {
 
 func (x *TxnResponse) Reset() {
 	*x = TxnResponse{}
-	mi := &file_pkg_proto_kvpb_transaction_proto_msgTypes[2]
+	mi := &file_pkg_proto_kvpb_transaction_transaction_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -297,7 +297,7 @@ func (x *TxnResponse) String() string {
 func (*TxnResponse) ProtoMessage() {}
 
 func (x *TxnResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_kvpb_transaction_proto_msgTypes[2]
+	mi := &file_pkg_proto_kvpb_transaction_transaction_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -310,7 +310,7 @@ func (x *TxnResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TxnResponse.ProtoReflect.Descriptor instead.
 func (*TxnResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_kvpb_transaction_proto_rawDescGZIP(), []int{2}
+	return file_pkg_proto_kvpb_transaction_transaction_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *TxnResponse) GetSucceeded() bool {
@@ -327,21 +327,21 @@ func (x *TxnResponse) GetResponses() []*OpResponse {
 	return nil
 }
 
-// 操作响应
+// OpResponse 操作响应
 type OpResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	Value         string                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
-	Version       int64                  `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
-	Exists        bool                   `protobuf:"varint,4,opt,name=exists,proto3" json:"exists,omitempty"`
-	Error         string                 `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`          // 键
+	Value         string                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`      // 值
+	Version       int64                  `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"` // 版本号
+	Exists        bool                   `protobuf:"varint,4,opt,name=exists,proto3" json:"exists,omitempty"`   // 是否存在
+	Error         string                 `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`      // 错误信息
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OpResponse) Reset() {
 	*x = OpResponse{}
-	mi := &file_pkg_proto_kvpb_transaction_proto_msgTypes[3]
+	mi := &file_pkg_proto_kvpb_transaction_transaction_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -353,7 +353,7 @@ func (x *OpResponse) String() string {
 func (*OpResponse) ProtoMessage() {}
 
 func (x *OpResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_kvpb_transaction_proto_msgTypes[3]
+	mi := &file_pkg_proto_kvpb_transaction_transaction_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -366,7 +366,7 @@ func (x *OpResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OpResponse.ProtoReflect.Descriptor instead.
 func (*OpResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_kvpb_transaction_proto_rawDescGZIP(), []int{3}
+	return file_pkg_proto_kvpb_transaction_transaction_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *OpResponse) GetKey() string {
@@ -404,11 +404,11 @@ func (x *OpResponse) GetError() string {
 	return ""
 }
 
-var File_pkg_proto_kvpb_transaction_proto protoreflect.FileDescriptor
+var File_pkg_proto_kvpb_transaction_transaction_proto protoreflect.FileDescriptor
 
-const file_pkg_proto_kvpb_transaction_proto_rawDesc = "" +
+const file_pkg_proto_kvpb_transaction_transaction_proto_rawDesc = "" +
 	"\n" +
-	" pkg/proto/kvpb/transaction.proto\x12\x04kvpb\x1a\x17pkg/proto/kvpb/op.proto\"\xa5\x01\n" +
+	",pkg/proto/kvpb/transaction/transaction.proto\x12\x04kvpb\x1a pkg/proto/kvpb/internal/op.proto\"\xa5\x01\n" +
 	"\aCompare\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12+\n" +
 	"\x06target\x18\x02 \x01(\x0e2\x13.kvpb.CompareTargetR\x06target\x12+\n" +
@@ -448,20 +448,20 @@ const file_pkg_proto_kvpb_transaction_proto_rawDesc = "" +
 	"\x06EXISTS\x10\x04B\x13Z\x11kv/pkg/proto/kvpbb\x06proto3"
 
 var (
-	file_pkg_proto_kvpb_transaction_proto_rawDescOnce sync.Once
-	file_pkg_proto_kvpb_transaction_proto_rawDescData []byte
+	file_pkg_proto_kvpb_transaction_transaction_proto_rawDescOnce sync.Once
+	file_pkg_proto_kvpb_transaction_transaction_proto_rawDescData []byte
 )
 
-func file_pkg_proto_kvpb_transaction_proto_rawDescGZIP() []byte {
-	file_pkg_proto_kvpb_transaction_proto_rawDescOnce.Do(func() {
-		file_pkg_proto_kvpb_transaction_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pkg_proto_kvpb_transaction_proto_rawDesc), len(file_pkg_proto_kvpb_transaction_proto_rawDesc)))
+func file_pkg_proto_kvpb_transaction_transaction_proto_rawDescGZIP() []byte {
+	file_pkg_proto_kvpb_transaction_transaction_proto_rawDescOnce.Do(func() {
+		file_pkg_proto_kvpb_transaction_transaction_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pkg_proto_kvpb_transaction_transaction_proto_rawDesc), len(file_pkg_proto_kvpb_transaction_transaction_proto_rawDesc)))
 	})
-	return file_pkg_proto_kvpb_transaction_proto_rawDescData
+	return file_pkg_proto_kvpb_transaction_transaction_proto_rawDescData
 }
 
-var file_pkg_proto_kvpb_transaction_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_pkg_proto_kvpb_transaction_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
-var file_pkg_proto_kvpb_transaction_proto_goTypes = []any{
+var file_pkg_proto_kvpb_transaction_transaction_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_pkg_proto_kvpb_transaction_transaction_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_pkg_proto_kvpb_transaction_transaction_proto_goTypes = []any{
 	(CompareResult)(0),  // 0: kvpb.CompareResult
 	(CompareTarget)(0),  // 1: kvpb.CompareTarget
 	(*Compare)(nil),     // 2: kvpb.Compare
@@ -470,7 +470,7 @@ var file_pkg_proto_kvpb_transaction_proto_goTypes = []any{
 	(*OpResponse)(nil),  // 5: kvpb.OpResponse
 	(*Op)(nil),          // 6: kvpb.Op
 }
-var file_pkg_proto_kvpb_transaction_proto_depIdxs = []int32{
+var file_pkg_proto_kvpb_transaction_transaction_proto_depIdxs = []int32{
 	1, // 0: kvpb.Compare.target:type_name -> kvpb.CompareTarget
 	0, // 1: kvpb.Compare.result:type_name -> kvpb.CompareResult
 	2, // 2: kvpb.TxnRequest.compare:type_name -> kvpb.Compare
@@ -484,28 +484,28 @@ var file_pkg_proto_kvpb_transaction_proto_depIdxs = []int32{
 	0, // [0:6] is the sub-list for field type_name
 }
 
-func init() { file_pkg_proto_kvpb_transaction_proto_init() }
-func file_pkg_proto_kvpb_transaction_proto_init() {
-	if File_pkg_proto_kvpb_transaction_proto != nil {
+func init() { file_pkg_proto_kvpb_transaction_transaction_proto_init() }
+func file_pkg_proto_kvpb_transaction_transaction_proto_init() {
+	if File_pkg_proto_kvpb_transaction_transaction_proto != nil {
 		return
 	}
-	file_pkg_proto_kvpb_op_proto_init()
+	file_pkg_proto_kvpb_internal_op_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_proto_kvpb_transaction_proto_rawDesc), len(file_pkg_proto_kvpb_transaction_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_proto_kvpb_transaction_transaction_proto_rawDesc), len(file_pkg_proto_kvpb_transaction_transaction_proto_rawDesc)),
 			NumEnums:      2,
 			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_pkg_proto_kvpb_transaction_proto_goTypes,
-		DependencyIndexes: file_pkg_proto_kvpb_transaction_proto_depIdxs,
-		EnumInfos:         file_pkg_proto_kvpb_transaction_proto_enumTypes,
-		MessageInfos:      file_pkg_proto_kvpb_transaction_proto_msgTypes,
+		GoTypes:           file_pkg_proto_kvpb_transaction_transaction_proto_goTypes,
+		DependencyIndexes: file_pkg_proto_kvpb_transaction_transaction_proto_depIdxs,
+		EnumInfos:         file_pkg_proto_kvpb_transaction_transaction_proto_enumTypes,
+		MessageInfos:      file_pkg_proto_kvpb_transaction_transaction_proto_msgTypes,
 	}.Build()
-	File_pkg_proto_kvpb_transaction_proto = out.File
-	file_pkg_proto_kvpb_transaction_proto_goTypes = nil
-	file_pkg_proto_kvpb_transaction_proto_depIdxs = nil
+	File_pkg_proto_kvpb_transaction_transaction_proto = out.File
+	file_pkg_proto_kvpb_transaction_transaction_proto_goTypes = nil
+	file_pkg_proto_kvpb_transaction_transaction_proto_depIdxs = nil
 }

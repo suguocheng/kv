@@ -12,6 +12,7 @@ import (
 	"kv/pkg/proto/raftpb"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type LogEntry struct {
@@ -434,7 +435,8 @@ func (rf *Raft) connectToPeersGRPC() {
 		}
 		go func(id int, addr string) {
 			for {
-				conn, err := grpc.Dial(addr, grpc.WithInsecure())
+				conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
 				if err == nil {
 					client := raftpb.NewRaftServiceClient(conn)
 					rf.mu.Lock()

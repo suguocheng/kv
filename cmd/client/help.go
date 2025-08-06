@@ -15,7 +15,7 @@ func printHelp() {
 	fmt.Println("    IF <条件> THEN <操作> ELSE <操作> - 条件事务")
 	fmt.Println("    条件格式: EXISTS key | VALUE key = value | VALUE key != value")
 	fmt.Println("    操作格式: PUT key value | DEL key | GET key")
-	fmt.Println("    PUT foo 1 PUT bar 2 DEL baz     - 无条件批量原子操作")
+	fmt.Println("    TXN PUT foo 1 PUT bar 2 DEL baz     - 无条件批量原子操作")
 	fmt.Println("  MVCC操作:")
 	fmt.Println("    GETREV key revision             - 获取指定版本的值")
 	fmt.Println("    HISTORY key [limit]             - 获取键的版本历史")

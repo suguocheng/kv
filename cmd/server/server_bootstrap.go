@@ -8,7 +8,6 @@ import (
 	"kv/pkg/proto/kvpb"
 	"kv/pkg/raft"
 	"kv/pkg/server"
-	"net"
 	"os"
 	"strconv"
 
@@ -102,11 +101,13 @@ func startApplyLoop(rf *raft.Raft, kv *kvstore.KV, applyCh chan raft.ApplyMsg) {
 				var op kvpb.Op
 				if err := proto.Unmarshal(msg.Command, &op); err == nil {
 					switch op.Type {
-					case "Put":
-						kv.Put(op.Key, string(op.Value))
-					case "PutTTL":
-						kv.PutWithTTL(op.Key, string(op.Value), op.Ttl)
-					case "Del":
+					case "PUT":
+						if op.Ttl > 0 {
+							kv.PutWithTTL(op.Key, string(op.Value), op.Ttl)
+						} else {
+							kv.Put(op.Key, string(op.Value))
+						}
+					case "DELETE":
 						kv.Delete(op.Key)
 					case "Compact":
 						revision, err := strconv.ParseInt(string(op.Value), 10, 64)
@@ -165,16 +166,8 @@ func startApplyLoop(rf *raft.Raft, kv *kvstore.KV, applyCh chan raft.ApplyMsg) {
 }
 
 func startClientListener(addr string, kv *kvstore.KV, rf *raft.Raft) {
-	ln, err := net.Listen("tcp", addr)
+	err := server.StartGRPCServer(addr, kv, rf)
 	if err != nil {
 		panic(err)
-	}
-	fmt.Println("Listening on", addr)
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			continue
-		}
-		go server.HandleConnection(conn, kv, rf)
 	}
 }

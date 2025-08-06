@@ -4,21 +4,18 @@ package kvpb;
 
 option go_package = "kv/pkg/proto/kvpb";
 
-// Watch请求
+// ==================== Watch请求 ====================
+
+// WatchRequest Watch监听请求
 message WatchRequest {
-  string key = 1;        // 要监听的键
-  string prefix = 2;     // 要监听的前缀
-  string watcher_id = 3; // 监听器ID（可选）
+  string key = 1;         // 要监听的键
+  string prefix = 2;      // 要监听的前缀
+  string watcher_id = 3;  // 监听器ID（可选）
 }
 
-// Watch响应
-message WatchResponse {
-  string watcher_id = 1; // 监听器ID
-  bool success = 2;      // 是否成功
-  string error = 3;      // 错误信息
-}
+// ==================== Watch事件 ====================
 
-// Watch事件
+// WatchEvent Watch事件
 message WatchEvent {
   int32 type = 1;        // 事件类型：0=PUT, 1=DELETE, 2=EXPIRE
   string key = 2;        // 键名
@@ -26,4 +23,4 @@ message WatchEvent {
   int64 revision = 4;    // 版本号
   int64 timestamp = 5;   // 时间戳
   int64 ttl = 6;         // TTL
-}
+} 

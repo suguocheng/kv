@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package kvpb;
+
+option go_package = "kv/pkg/proto/kvpb";
+
+// ==================== WAL条目类型 ====================
+
+// EntryType WAL条目类型
+enum EntryType {
+  ENTRY_NORMAL = 0;      // 普通条目
+  ENTRY_CONF_CHANGE = 1; // 配置变更条目
+  ENTRY_META = 2;        // 元数据条目
+}
+
+// ==================== WAL条目 ====================
+
+// WALEntry WAL分段的单条entry
+message WALEntry {
+  uint64 term = 1;     // Raft任期
+  uint64 index = 2;    // 条目索引
+  EntryType type = 3;  // 条目类型
+  bytes data = 4;      // 数据（raft entry、kv op等protobuf序列化内容）
+} 

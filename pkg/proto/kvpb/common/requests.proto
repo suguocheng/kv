@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package kvpb;
+
+option go_package = "kv/pkg/proto/kvpb";
+
+// ==================== 基本操作请求 ====================
+
+// GetRequest 获取键值对请求
+message GetRequest {
+  string key = 1;  // 要获取的键
+}
+
+// PutRequest 设置键值对请求
+message PutRequest {
+  string key = 1;    // 键
+  string value = 2;  // 值
+}
+
+// DeleteRequest 删除键值对请求
+message DeleteRequest {
+  string key = 1;  // 要删除的键
+}
+
+// PutWithTTLRequest 设置带TTL的键值对请求
+message PutWithTTLRequest {
+  string key = 1;    // 键
+  string value = 2;  // 值
+  int64 ttl = 3;     // TTL（秒），0表示永不过期
+}
+
+// ==================== MVCC操作请求 ====================
+
+// GetWithRevisionRequest 获取指定版本的键值对请求
+message GetWithRevisionRequest {
+  string key = 1;      // 键
+  int64 revision = 2;  // 版本号，0表示最新版本
+}
+
+// GetHistoryRequest 获取键历史版本请求
+message GetHistoryRequest {
+  string key = 1;   // 键
+  int64 limit = 2;  // 返回历史版本数量限制
+}
+
+// ==================== Watch操作请求 ====================
+
+// UnwatchRequest 取消监听请求
+message UnwatchRequest {
+  string watcher_id = 1;  // 监听器ID
+}
+
+// ==================== 系统操作请求 ====================
+
+// GetStatsRequest 获取统计信息请求
+message GetStatsRequest {
+  // 空消息，用于获取系统统计信息
+} 

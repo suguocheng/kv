@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package kvpb;
+
+option go_package = "kv/pkg/proto/kvpb";
+
+import "pkg/proto/kvpb/kv/kv.proto";
+
+// ==================== 基本操作响应 ====================
+
+// GetResponse 获取键值对响应
+message GetResponse {
+  string value = 1;   // 值
+  bool exists = 2;    // 键是否存在
+  string error = 3;   // 错误信息
+}
+
+// PutResponse 设置键值对响应
+message PutResponse {
+  int64 revision = 1;  // 版本号
+  string error = 2;    // 错误信息
+}
+
+// DeleteResponse 删除键值对响应
+message DeleteResponse {
+  int64 revision = 1;  // 版本号
+  string error = 2;    // 错误信息
+}
+
+// ==================== MVCC操作响应 ====================
+
+// GetWithRevisionResponse 获取指定版本的键值对响应
+message GetWithRevisionResponse {
+  string value = 1;     // 值
+  int64 revision = 2;   // 版本号
+  bool exists = 3;      // 键是否存在
+  string error = 4;     // 错误信息
+}
+
+// GetHistoryResponse 获取键历史版本响应
+message GetHistoryResponse {
+  repeated VersionedKVPair items = 1;  // 历史版本列表
+  string error = 2;                    // 错误信息
+}
+
+// ==================== Watch操作响应 ====================
+
+// UnwatchResponse 取消监听响应
+message UnwatchResponse {
+  bool success = 1;  // 是否成功
+  string error = 2;  // 错误信息
+}
+
+// ==================== 系统操作响应 ====================
+
+// GetStatsResponse 获取统计信息响应
+message GetStatsResponse {
+  map<string, string> stats = 1;  // 统计信息
+  string error = 2;               // 错误信息
+} 

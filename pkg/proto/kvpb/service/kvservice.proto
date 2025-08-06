@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package kvpb;
+
+option go_package = "kv/pkg/proto/kvpb";
+
+import "pkg/proto/kvpb/common/requests.proto";
+import "pkg/proto/kvpb/common/responses.proto";
+import "pkg/proto/kvpb/kv/kv.proto";
+import "pkg/proto/kvpb/transaction/transaction.proto";
+import "pkg/proto/kvpb/watch/watch.proto";
+
+// KVService 提供分布式键值存储服务
+// 支持基本的CRUD操作、MVCC、事务、Watch等功能
+service KVService {
+  // ==================== 基本操作 ====================
+  
+  // Get 获取指定键的值
+  rpc Get(GetRequest) returns (GetResponse);
+  
+  // Put 设置键值对
+  rpc Put(PutRequest) returns (PutResponse);
+  
+  // Delete 删除指定键
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+  
+  // PutWithTTL 设置带TTL的键值对
+  rpc PutWithTTL(PutWithTTLRequest) returns (PutResponse);
+  
+  // ==================== MVCC操作 ====================
+  
+  // GetWithRevision 获取指定版本的键值对
+  rpc GetWithRevision(GetWithRevisionRequest) returns (GetWithRevisionResponse);
+  
+  // GetHistory 获取键的历史版本
+  rpc GetHistory(GetHistoryRequest) returns (GetHistoryResponse);
+  
+  // Range 范围查询
+  rpc Range(RangeRequest) returns (RangeResponse);
+  
+  // Compact 压缩历史版本
+  rpc Compact(CompactRequest) returns (CompactResponse);
+  
+  // ==================== 事务操作 ====================
+  
+  // Txn 执行事务
+  rpc Txn(TxnRequest) returns (TxnResponse);
+  
+  // ==================== Watch操作 ====================
+  
+  // Watch 监听键值变化
+  rpc Watch(WatchRequest) returns (stream WatchEvent);
+  
+  // Unwatch 取消监听
+  rpc Unwatch(UnwatchRequest) returns (UnwatchResponse);
+  
+  // ==================== 系统操作 ====================
+  
+  // GetStats 获取系统统计信息
+  rpc GetStats(GetStatsRequest) returns (GetStatsResponse);
+} 

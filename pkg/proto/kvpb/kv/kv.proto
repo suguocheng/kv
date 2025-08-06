@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package kvpb;
+
+option go_package = "kv/pkg/proto/kvpb";
+
+// ==================== 版本信息 ====================
+
+// Version 版本信息
+message Version {
+  int64 main = 1;  // 主版本号（单调递增）
+  int64 sub = 2;   // 子版本号（用于同一主版本下的多次修改）
+}
+
+// ==================== 键值对定义 ====================
+
+// VersionedKVPair 带版本信息的键值对
+message VersionedKVPair {
+  string key = 1;              // 键
+  string value = 2;            // 值
+  int64 ttl = 3;              // TTL（秒），0表示永不过期
+  int64 created_revision = 4;  // 创建版本号
+  int64 mod_revision = 5;      // 修改版本号
+  int64 version = 6;           // 当前版本号
+  bool deleted = 7;            // 是否已删除（墓碑标记）
+}
+
+// ==================== 存储快照 ====================
+
+// MVCCStore MVCC存储快照
+message MVCCStore {
+  repeated VersionedKVPair pairs = 1;  // 键值对列表
+  int64 current_revision = 2;          // 当前版本号
+}
+
+// ==================== 范围查询 ====================
+
+// RangeRequest 版本范围查询请求
+message RangeRequest {
+  string key = 1;           // 起始键
+  string range_end = 2;     // 结束键（可选）
+  int64 revision = 3;       // 查询版本号，0表示最新版本
+  int64 limit = 4;          // 返回结果数量限制
+  bool keys_only = 5;       // 是否只返回键
+  bool count_only = 6;      // 是否只返回数量
+}
+
+// RangeResponse 版本范围查询响应
+message RangeResponse {
+  repeated VersionedKVPair kvs = 1;  // 键值对列表
+  int64 count = 2;                   // 总数
+  int64 revision = 3;                // 当前版本号
+  bool more = 4;                     // 是否还有更多结果
+}
+
+// ==================== 压缩操作 ====================
+
+// CompactRequest 压缩请求
+message CompactRequest {
+  int64 revision = 1;  // 压缩到指定版本号
+  bool physical = 2;   // 是否物理删除
+}
+
+// CompactResponse 压缩响应
+message CompactResponse {
+  int64 revision = 1;   // 压缩后的版本号
+  int64 compacted = 2;  // 压缩的版本数量
+} 

@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v3.21.12
-// source: pkg/proto/kvpb/mvcc.proto
+// source: pkg/proto/kvpb/kv/kv.proto
 
 package kvpb
 
@@ -21,7 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// 版本信息
+// Version 版本信息
 type Version struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Main          int64                  `protobuf:"varint,1,opt,name=main,proto3" json:"main,omitempty"` // 主版本号（单调递增）
@@ -32,7 +32,7 @@ type Version struct {
 
 func (x *Version) Reset() {
 	*x = Version{}
-	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[0]
+	mi := &file_pkg_proto_kvpb_kv_kv_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -44,7 +44,7 @@ func (x *Version) String() string {
 func (*Version) ProtoMessage() {}
 
 func (x *Version) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[0]
+	mi := &file_pkg_proto_kvpb_kv_kv_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -57,7 +57,7 @@ func (x *Version) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Version.ProtoReflect.Descriptor instead.
 func (*Version) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP(), []int{0}
+	return file_pkg_proto_kvpb_kv_kv_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Version) GetMain() int64 {
@@ -74,12 +74,12 @@ func (x *Version) GetSub() int64 {
 	return 0
 }
 
-// 带版本信息的键值对
+// VersionedKVPair 带版本信息的键值对
 type VersionedKVPair struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Key             string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	Value           string                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
-	Ttl             int64                  `protobuf:"varint,3,opt,name=ttl,proto3" json:"ttl,omitempty"`                                                // TTL in seconds, 0 means no expiration
+	Key             string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`                                                 // 键
+	Value           string                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`                                             // 值
+	Ttl             int64                  `protobuf:"varint,3,opt,name=ttl,proto3" json:"ttl,omitempty"`                                                // TTL（秒），0表示永不过期
 	CreatedRevision int64                  `protobuf:"varint,4,opt,name=created_revision,json=createdRevision,proto3" json:"created_revision,omitempty"` // 创建版本号
 	ModRevision     int64                  `protobuf:"varint,5,opt,name=mod_revision,json=modRevision,proto3" json:"mod_revision,omitempty"`             // 修改版本号
 	Version         int64                  `protobuf:"varint,6,opt,name=version,proto3" json:"version,omitempty"`                                        // 当前版本号
@@ -90,7 +90,7 @@ type VersionedKVPair struct {
 
 func (x *VersionedKVPair) Reset() {
 	*x = VersionedKVPair{}
-	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[1]
+	mi := &file_pkg_proto_kvpb_kv_kv_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -102,7 +102,7 @@ func (x *VersionedKVPair) String() string {
 func (*VersionedKVPair) ProtoMessage() {}
 
 func (x *VersionedKVPair) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[1]
+	mi := &file_pkg_proto_kvpb_kv_kv_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -115,7 +115,7 @@ func (x *VersionedKVPair) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VersionedKVPair.ProtoReflect.Descriptor instead.
 func (*VersionedKVPair) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP(), []int{1}
+	return file_pkg_proto_kvpb_kv_kv_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *VersionedKVPair) GetKey() string {
@@ -167,10 +167,10 @@ func (x *VersionedKVPair) GetDeleted() bool {
 	return false
 }
 
-// MVCC存储快照
+// MVCCStore MVCC存储快照
 type MVCCStore struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Pairs           []*VersionedKVPair     `protobuf:"bytes,1,rep,name=pairs,proto3" json:"pairs,omitempty"`
+	Pairs           []*VersionedKVPair     `protobuf:"bytes,1,rep,name=pairs,proto3" json:"pairs,omitempty"`                                             // 键值对列表
 	CurrentRevision int64                  `protobuf:"varint,2,opt,name=current_revision,json=currentRevision,proto3" json:"current_revision,omitempty"` // 当前版本号
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -178,7 +178,7 @@ type MVCCStore struct {
 
 func (x *MVCCStore) Reset() {
 	*x = MVCCStore{}
-	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[2]
+	mi := &file_pkg_proto_kvpb_kv_kv_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -190,7 +190,7 @@ func (x *MVCCStore) String() string {
 func (*MVCCStore) ProtoMessage() {}
 
 func (x *MVCCStore) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[2]
+	mi := &file_pkg_proto_kvpb_kv_kv_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -203,7 +203,7 @@ func (x *MVCCStore) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MVCCStore.ProtoReflect.Descriptor instead.
 func (*MVCCStore) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP(), []int{2}
+	return file_pkg_proto_kvpb_kv_kv_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *MVCCStore) GetPairs() []*VersionedKVPair {
@@ -220,11 +220,11 @@ func (x *MVCCStore) GetCurrentRevision() int64 {
 	return 0
 }
 
-// 版本范围查询请求
+// RangeRequest 版本范围查询请求
 type RangeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	RangeEnd      string                 `protobuf:"bytes,2,opt,name=range_end,json=rangeEnd,proto3" json:"range_end,omitempty"`     // 范围结束键（可选）
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`                               // 起始键
+	RangeEnd      string                 `protobuf:"bytes,2,opt,name=range_end,json=rangeEnd,proto3" json:"range_end,omitempty"`     // 结束键（可选）
 	Revision      int64                  `protobuf:"varint,3,opt,name=revision,proto3" json:"revision,omitempty"`                    // 查询版本号，0表示最新版本
 	Limit         int64                  `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`                          // 返回结果数量限制
 	KeysOnly      bool                   `protobuf:"varint,5,opt,name=keys_only,json=keysOnly,proto3" json:"keys_only,omitempty"`    // 是否只返回键
@@ -235,7 +235,7 @@ type RangeRequest struct {
 
 func (x *RangeRequest) Reset() {
 	*x = RangeRequest{}
-	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[3]
+	mi := &file_pkg_proto_kvpb_kv_kv_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -247,7 +247,7 @@ func (x *RangeRequest) String() string {
 func (*RangeRequest) ProtoMessage() {}
 
 func (x *RangeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[3]
+	mi := &file_pkg_proto_kvpb_kv_kv_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -260,7 +260,7 @@ func (x *RangeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RangeRequest.ProtoReflect.Descriptor instead.
 func (*RangeRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP(), []int{3}
+	return file_pkg_proto_kvpb_kv_kv_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *RangeRequest) GetKey() string {
@@ -305,20 +305,20 @@ func (x *RangeRequest) GetCountOnly() bool {
 	return false
 }
 
-// 版本范围查询响应
+// RangeResponse 版本范围查询响应
 type RangeResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Kvs           []*VersionedKVPair     `protobuf:"bytes,1,rep,name=kvs,proto3" json:"kvs,omitempty"`
-	Count         int64                  `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
-	Revision      int64                  `protobuf:"varint,3,opt,name=revision,proto3" json:"revision,omitempty"`
-	More          bool                   `protobuf:"varint,4,opt,name=more,proto3" json:"more,omitempty"` // 是否还有更多结果
+	Kvs           []*VersionedKVPair     `protobuf:"bytes,1,rep,name=kvs,proto3" json:"kvs,omitempty"`            // 键值对列表
+	Count         int64                  `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`       // 总数
+	Revision      int64                  `protobuf:"varint,3,opt,name=revision,proto3" json:"revision,omitempty"` // 当前版本号
+	More          bool                   `protobuf:"varint,4,opt,name=more,proto3" json:"more,omitempty"`         // 是否还有更多结果
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *RangeResponse) Reset() {
 	*x = RangeResponse{}
-	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[4]
+	mi := &file_pkg_proto_kvpb_kv_kv_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -330,7 +330,7 @@ func (x *RangeResponse) String() string {
 func (*RangeResponse) ProtoMessage() {}
 
 func (x *RangeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[4]
+	mi := &file_pkg_proto_kvpb_kv_kv_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -343,7 +343,7 @@ func (x *RangeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RangeResponse.ProtoReflect.Descriptor instead.
 func (*RangeResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP(), []int{4}
+	return file_pkg_proto_kvpb_kv_kv_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *RangeResponse) GetKvs() []*VersionedKVPair {
@@ -374,121 +374,7 @@ func (x *RangeResponse) GetMore() bool {
 	return false
 }
 
-// 版本历史查询请求
-type HistoryRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	Revision      int64                  `protobuf:"varint,2,opt,name=revision,proto3" json:"revision,omitempty"` // 查询版本号
-	Limit         int64                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`       // 返回历史版本数量限制
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *HistoryRequest) Reset() {
-	*x = HistoryRequest{}
-	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *HistoryRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*HistoryRequest) ProtoMessage() {}
-
-func (x *HistoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use HistoryRequest.ProtoReflect.Descriptor instead.
-func (*HistoryRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *HistoryRequest) GetKey() string {
-	if x != nil {
-		return x.Key
-	}
-	return ""
-}
-
-func (x *HistoryRequest) GetRevision() int64 {
-	if x != nil {
-		return x.Revision
-	}
-	return 0
-}
-
-func (x *HistoryRequest) GetLimit() int64 {
-	if x != nil {
-		return x.Limit
-	}
-	return 0
-}
-
-// 版本历史查询响应
-type HistoryResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	History       []*VersionedKVPair     `protobuf:"bytes,1,rep,name=history,proto3" json:"history,omitempty"`
-	Revision      int64                  `protobuf:"varint,2,opt,name=revision,proto3" json:"revision,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *HistoryResponse) Reset() {
-	*x = HistoryResponse{}
-	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *HistoryResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*HistoryResponse) ProtoMessage() {}
-
-func (x *HistoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use HistoryResponse.ProtoReflect.Descriptor instead.
-func (*HistoryResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *HistoryResponse) GetHistory() []*VersionedKVPair {
-	if x != nil {
-		return x.History
-	}
-	return nil
-}
-
-func (x *HistoryResponse) GetRevision() int64 {
-	if x != nil {
-		return x.Revision
-	}
-	return 0
-}
-
-// 压缩请求
+// CompactRequest 压缩请求
 type CompactRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Revision      int64                  `protobuf:"varint,1,opt,name=revision,proto3" json:"revision,omitempty"` // 压缩到指定版本号
@@ -499,7 +385,7 @@ type CompactRequest struct {
 
 func (x *CompactRequest) Reset() {
 	*x = CompactRequest{}
-	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[7]
+	mi := &file_pkg_proto_kvpb_kv_kv_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -511,7 +397,7 @@ func (x *CompactRequest) String() string {
 func (*CompactRequest) ProtoMessage() {}
 
 func (x *CompactRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[7]
+	mi := &file_pkg_proto_kvpb_kv_kv_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -524,7 +410,7 @@ func (x *CompactRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompactRequest.ProtoReflect.Descriptor instead.
 func (*CompactRequest) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP(), []int{7}
+	return file_pkg_proto_kvpb_kv_kv_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *CompactRequest) GetRevision() int64 {
@@ -541,7 +427,7 @@ func (x *CompactRequest) GetPhysical() bool {
 	return false
 }
 
-// 压缩响应
+// CompactResponse 压缩响应
 type CompactResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Revision      int64                  `protobuf:"varint,1,opt,name=revision,proto3" json:"revision,omitempty"`   // 压缩后的版本号
@@ -552,7 +438,7 @@ type CompactResponse struct {
 
 func (x *CompactResponse) Reset() {
 	*x = CompactResponse{}
-	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[8]
+	mi := &file_pkg_proto_kvpb_kv_kv_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -564,7 +450,7 @@ func (x *CompactResponse) String() string {
 func (*CompactResponse) ProtoMessage() {}
 
 func (x *CompactResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_pkg_proto_kvpb_mvcc_proto_msgTypes[8]
+	mi := &file_pkg_proto_kvpb_kv_kv_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -577,7 +463,7 @@ func (x *CompactResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompactResponse.ProtoReflect.Descriptor instead.
 func (*CompactResponse) Descriptor() ([]byte, []int) {
-	return file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP(), []int{8}
+	return file_pkg_proto_kvpb_kv_kv_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *CompactResponse) GetRevision() int64 {
@@ -594,11 +480,11 @@ func (x *CompactResponse) GetCompacted() int64 {
 	return 0
 }
 
-var File_pkg_proto_kvpb_mvcc_proto protoreflect.FileDescriptor
+var File_pkg_proto_kvpb_kv_kv_proto protoreflect.FileDescriptor
 
-const file_pkg_proto_kvpb_mvcc_proto_rawDesc = "" +
+const file_pkg_proto_kvpb_kv_kv_proto_rawDesc = "" +
 	"\n" +
-	"\x19pkg/proto/kvpb/mvcc.proto\x12\x04kvpb\"/\n" +
+	"\x1apkg/proto/kvpb/kv/kv.proto\x12\x04kvpb\"/\n" +
 	"\aVersion\x12\x12\n" +
 	"\x04main\x18\x01 \x01(\x03R\x04main\x12\x10\n" +
 	"\x03sub\x18\x02 \x01(\x03R\x03sub\"\xcd\x01\n" +
@@ -625,14 +511,7 @@ const file_pkg_proto_kvpb_mvcc_proto_rawDesc = "" +
 	"\x03kvs\x18\x01 \x03(\v2\x15.kvpb.VersionedKVPairR\x03kvs\x12\x14\n" +
 	"\x05count\x18\x02 \x01(\x03R\x05count\x12\x1a\n" +
 	"\brevision\x18\x03 \x01(\x03R\brevision\x12\x12\n" +
-	"\x04more\x18\x04 \x01(\bR\x04more\"T\n" +
-	"\x0eHistoryRequest\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x1a\n" +
-	"\brevision\x18\x02 \x01(\x03R\brevision\x12\x14\n" +
-	"\x05limit\x18\x03 \x01(\x03R\x05limit\"^\n" +
-	"\x0fHistoryResponse\x12/\n" +
-	"\ahistory\x18\x01 \x03(\v2\x15.kvpb.VersionedKVPairR\ahistory\x12\x1a\n" +
-	"\brevision\x18\x02 \x01(\x03R\brevision\"H\n" +
+	"\x04more\x18\x04 \x01(\bR\x04more\"H\n" +
 	"\x0eCompactRequest\x12\x1a\n" +
 	"\brevision\x18\x01 \x01(\x03R\brevision\x12\x1a\n" +
 	"\bphysical\x18\x02 \x01(\bR\bphysical\"K\n" +
@@ -641,60 +520,57 @@ const file_pkg_proto_kvpb_mvcc_proto_rawDesc = "" +
 	"\tcompacted\x18\x02 \x01(\x03R\tcompactedB\x13Z\x11kv/pkg/proto/kvpbb\x06proto3"
 
 var (
-	file_pkg_proto_kvpb_mvcc_proto_rawDescOnce sync.Once
-	file_pkg_proto_kvpb_mvcc_proto_rawDescData []byte
+	file_pkg_proto_kvpb_kv_kv_proto_rawDescOnce sync.Once
+	file_pkg_proto_kvpb_kv_kv_proto_rawDescData []byte
 )
 
-func file_pkg_proto_kvpb_mvcc_proto_rawDescGZIP() []byte {
-	file_pkg_proto_kvpb_mvcc_proto_rawDescOnce.Do(func() {
-		file_pkg_proto_kvpb_mvcc_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pkg_proto_kvpb_mvcc_proto_rawDesc), len(file_pkg_proto_kvpb_mvcc_proto_rawDesc)))
+func file_pkg_proto_kvpb_kv_kv_proto_rawDescGZIP() []byte {
+	file_pkg_proto_kvpb_kv_kv_proto_rawDescOnce.Do(func() {
+		file_pkg_proto_kvpb_kv_kv_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pkg_proto_kvpb_kv_kv_proto_rawDesc), len(file_pkg_proto_kvpb_kv_kv_proto_rawDesc)))
 	})
-	return file_pkg_proto_kvpb_mvcc_proto_rawDescData
+	return file_pkg_proto_kvpb_kv_kv_proto_rawDescData
 }
 
-var file_pkg_proto_kvpb_mvcc_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
-var file_pkg_proto_kvpb_mvcc_proto_goTypes = []any{
+var file_pkg_proto_kvpb_kv_kv_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_pkg_proto_kvpb_kv_kv_proto_goTypes = []any{
 	(*Version)(nil),         // 0: kvpb.Version
 	(*VersionedKVPair)(nil), // 1: kvpb.VersionedKVPair
 	(*MVCCStore)(nil),       // 2: kvpb.MVCCStore
 	(*RangeRequest)(nil),    // 3: kvpb.RangeRequest
 	(*RangeResponse)(nil),   // 4: kvpb.RangeResponse
-	(*HistoryRequest)(nil),  // 5: kvpb.HistoryRequest
-	(*HistoryResponse)(nil), // 6: kvpb.HistoryResponse
-	(*CompactRequest)(nil),  // 7: kvpb.CompactRequest
-	(*CompactResponse)(nil), // 8: kvpb.CompactResponse
+	(*CompactRequest)(nil),  // 5: kvpb.CompactRequest
+	(*CompactResponse)(nil), // 6: kvpb.CompactResponse
 }
-var file_pkg_proto_kvpb_mvcc_proto_depIdxs = []int32{
+var file_pkg_proto_kvpb_kv_kv_proto_depIdxs = []int32{
 	1, // 0: kvpb.MVCCStore.pairs:type_name -> kvpb.VersionedKVPair
 	1, // 1: kvpb.RangeResponse.kvs:type_name -> kvpb.VersionedKVPair
-	1, // 2: kvpb.HistoryResponse.history:type_name -> kvpb.VersionedKVPair
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_pkg_proto_kvpb_mvcc_proto_init() }
-func file_pkg_proto_kvpb_mvcc_proto_init() {
-	if File_pkg_proto_kvpb_mvcc_proto != nil {
+func init() { file_pkg_proto_kvpb_kv_kv_proto_init() }
+func file_pkg_proto_kvpb_kv_kv_proto_init() {
+	if File_pkg_proto_kvpb_kv_kv_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_proto_kvpb_mvcc_proto_rawDesc), len(file_pkg_proto_kvpb_mvcc_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_proto_kvpb_kv_kv_proto_rawDesc), len(file_pkg_proto_kvpb_kv_kv_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_pkg_proto_kvpb_mvcc_proto_goTypes,
-		DependencyIndexes: file_pkg_proto_kvpb_mvcc_proto_depIdxs,
-		MessageInfos:      file_pkg_proto_kvpb_mvcc_proto_msgTypes,
+		GoTypes:           file_pkg_proto_kvpb_kv_kv_proto_goTypes,
+		DependencyIndexes: file_pkg_proto_kvpb_kv_kv_proto_depIdxs,
+		MessageInfos:      file_pkg_proto_kvpb_kv_kv_proto_msgTypes,
 	}.Build()
-	File_pkg_proto_kvpb_mvcc_proto = out.File
-	file_pkg_proto_kvpb_mvcc_proto_goTypes = nil
-	file_pkg_proto_kvpb_mvcc_proto_depIdxs = nil
+	File_pkg_proto_kvpb_kv_kv_proto = out.File
+	file_pkg_proto_kvpb_kv_kv_proto_goTypes = nil
+	file_pkg_proto_kvpb_kv_kv_proto_depIdxs = nil
 }

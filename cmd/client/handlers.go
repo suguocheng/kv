@@ -1,12 +1,112 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"kv/pkg/client"
 	"kv/pkg/proto/kvpb"
 	"strconv"
 	"strings"
 )
+
+// handleGet 处理GET命令
+func handleGet(cli *client.Client, args []string) {
+	if len(args) != 1 {
+		fmt.Println("用法: GET key")
+		return
+	}
+
+	key := args[0]
+	ctx := context.Background()
+	value, err := cli.Get(ctx, key)
+	if err != nil {
+		fmt.Printf("获取失败: %v\n", err)
+		return
+	}
+
+	if value == "NOTFOUND" {
+		fmt.Printf("键 '%s' 不存在\n", key)
+	} else {
+		fmt.Printf("键: %s, 值: %s\n", key, value)
+	}
+}
+
+// handlePut 处理PUT命令
+func handlePut(cli *client.Client, args []string) {
+	if len(args) != 2 {
+		fmt.Println("用法: PUT key value")
+		return
+	}
+
+	key := args[0]
+	value := args[1]
+	ctx := context.Background()
+	resp, err := cli.Put(ctx, key, value)
+	if err != nil {
+		fmt.Printf("设置失败: %v\n", err)
+		return
+	}
+
+	if resp == "OK" {
+		fmt.Printf("成功设置键 '%s' = '%s'\n", key, value)
+	} else {
+		fmt.Printf("设置响应: %s\n", resp)
+	}
+}
+
+// handleDel 处理DEL命令
+func handleDel(cli *client.Client, args []string) {
+	if len(args) != 1 {
+		fmt.Println("用法: DEL key")
+		return
+	}
+
+	key := args[0]
+	ctx := context.Background()
+	resp, err := cli.Delete(ctx, key)
+	if err != nil {
+		fmt.Printf("删除失败: %v\n", err)
+		return
+	}
+
+	if resp == "OK" {
+		fmt.Printf("成功删除键 '%s'\n", key)
+	} else {
+		fmt.Printf("删除响应: %s\n", resp)
+	}
+}
+
+// handlePutTTL 处理PUTTTL命令
+func handlePutTTL(cli *client.Client, args []string) {
+	if len(args) != 3 {
+		fmt.Println("用法: PUTTTL key value ttl")
+		return
+	}
+
+	key := args[0]
+	value := args[1]
+	ttlStr := args[2]
+
+	// 验证TTL格式
+	ttl, err := strconv.ParseInt(ttlStr, 10, 64)
+	if err != nil || ttl < 0 {
+		fmt.Println("TTL必须是大于等于0的整数")
+		return
+	}
+
+	ctx := context.Background()
+	resp, err := cli.PutWithTTL(ctx, key, value, ttlStr)
+	if err != nil {
+		fmt.Printf("设置失败: %v\n", err)
+		return
+	}
+
+	if resp == "OK" {
+		fmt.Printf("成功设置键 '%s' = '%s' (TTL: %d秒)\n", key, value, ttl)
+	} else {
+		fmt.Printf("设置响应: %s\n", resp)
+	}
+}
 
 // handleGetRevision 处理版本查询
 func handleGetRevision(cli *client.Client, args []string) {

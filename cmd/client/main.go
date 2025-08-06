@@ -67,6 +67,14 @@ func main() {
 		}
 
 		switch strings.ToUpper(parts[0]) {
+		case "GET":
+			handleGet(cli, parts[1:])
+		case "PUT":
+			handlePut(cli, parts[1:])
+		case "DEL":
+			handleDel(cli, parts[1:])
+		case "PUTTTL":
+			handlePutTTL(cli, parts[1:])
 		case "GETREV":
 			handleGetRevision(cli, parts[1:])
 		case "HISTORY":
@@ -88,12 +96,8 @@ func main() {
 		case "HELP":
 			printHelp()
 		default:
-			resp, err := cli.SendCommand(cmd)
-			if err != nil {
-				fmt.Println("Error:", err)
-			} else {
-				fmt.Println(resp)
-			}
+			fmt.Printf("Unknown command: %s\n", parts[0])
+			fmt.Println("Type HELP for available commands")
 		}
 	}
 

@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package kvpb;
+
+option go_package = "kv/pkg/proto/kvpb";
+
+// Op 操作定义
+// 用于内部操作和事务处理
+message Op {
+  string type = 1;  // 操作类型：PUT, DELETE, PUTTTL等
+  string key = 2;   // 键
+  bytes value = 3;  // 值（二进制格式）
+  int64 ttl = 4;    // TTL（秒），0表示永不过期
+} 
