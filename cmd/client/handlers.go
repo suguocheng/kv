@@ -451,33 +451,18 @@ func handleStats(cli *client.Client) {
 
 // handleWatch 处理Watch命令
 func handleWatch(cli *client.Client, args []string) {
-	if len(args) < 1 {
-		fmt.Println("用法: WATCH key|prefix [watcher_id]")
+	if len(args) != 1 {
+		fmt.Println("用法: WATCH key")
 		fmt.Println("  例如: WATCH user:1")
-		fmt.Println("  例如: WATCH user: my-watcher-1")
 		return
 	}
 
 	key := args[0]
-	var watcherID string
-	if len(args) >= 2 {
-		watcherID = args[1]
-	} else {
-		// 自动生成watcher_id
-		watcherID = fmt.Sprintf("watch_%d", time.Now().Unix())
-	}
+	// 自动生成watcher_id
+	watcherID := fmt.Sprintf("watch_%d", time.Now().Unix())
 
-	var stream *client.WatchStream
-	var err error
-
-	// 判断是键还是前缀
-	if strings.HasSuffix(key, ":") {
-		// 前缀监听
-		stream, err = cli.WatchPrefixWithID(key, watcherID)
-	} else {
-		// 键监听
-		stream, err = cli.WatchKeyWithID(key, watcherID)
-	}
+	// 只支持单个键监听
+	stream, err := cli.WatchKeyWithID(key, watcherID)
 
 	if err != nil {
 		fmt.Printf("创建监听器失败: %v\n", err)

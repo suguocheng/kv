@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"kv/pkg/proto/kvpb"
+	"kv/pkg/wal"
 	"kv/pkg/watch"
 	"os"
 	"path/filepath"
@@ -15,15 +16,15 @@ import (
 )
 
 type KV struct {
-	walManager        *WALManager
+	walManager        *wal.WALManager
 	store             *SkipList // 改为MVCC跳表
 	mu                sync.RWMutex
 	snapshotPath      string // 快照文件路径
 	lastSnapshotIndex int    // 最后快照的索引
 	cleanupTicker     *time.Ticker
 	stopCleanup       chan struct{}
-	watcher           *watch.KVWatcher // 添加Watch功能
-	LastAppliedIndex  int              // WAL重放后，记录最后已应用的raft日志索引
+	watcher           *watch.WatchManager // 添加Watch功能
+	LastAppliedIndex  int                 // WAL重放后，记录最后已应用的raft日志索引
 }
 
 func NewKV(walDir string, maxEntriesPerFile int) (*KV, error) {
@@ -31,7 +32,7 @@ func NewKV(walDir string, maxEntriesPerFile int) (*KV, error) {
 	snapshotPath := filepath.Join(filepath.Dir(walDir), "snapshot.pb")
 
 	// 创建WAL管理器
-	walManager, err := NewWALManager(walDir, maxEntriesPerFile)
+	walManager, err := wal.NewWALManager(walDir, maxEntriesPerFile)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +42,7 @@ func NewKV(walDir string, maxEntriesPerFile int) (*KV, error) {
 		store:        NewSkipList(), // 使用MVCC跳表
 		snapshotPath: snapshotPath,
 		stopCleanup:  make(chan struct{}),
-		watcher:      watch.NewKVWatcher(), // 初始化Watch功能
+		watcher:      watch.NewWatchManager(), // 初始化Watch功能
 	}
 
 	// 1. 先从快照恢复
@@ -86,7 +87,7 @@ func (kv *KV) cleanupExpiredKeys() {
 
 		// 通知Watch监听器过期事件
 		for _, key := range expiredKeys {
-			kv.watcher.NotifyExpire(key, 0) // 过期事件使用0作为revision
+			kv.watcher.Notify(&watch.Event{Type: watch.EventExpire, Key: key, Revision: 0, Timestamp: time.Now()})
 		}
 	}
 }
@@ -156,7 +157,7 @@ func (kv *KV) Put(key, value string) error {
 	revision, err := kv.store.Put(key, value, 0)
 	if err == nil {
 		// 通知Watch监听器
-		kv.watcher.NotifyPut(key, value, revision, 0)
+		kv.watcher.Notify(&watch.Event{Type: watch.EventPut, Key: key, Value: value, Revision: revision, Timestamp: time.Now(), TTL: 0})
 	}
 	return err
 }
@@ -168,7 +169,7 @@ func (kv *KV) PutWithTTL(key, value string, ttl int64) error {
 	revision, err := kv.store.Put(key, value, ttl)
 	if err == nil {
 		// 通知Watch监听器
-		kv.watcher.NotifyPut(key, value, revision, ttl)
+		kv.watcher.Notify(&watch.Event{Type: watch.EventPut, Key: key, Value: value, Revision: revision, Timestamp: time.Now(), TTL: ttl})
 	}
 	return err
 }
@@ -188,7 +189,7 @@ func (kv *KV) Delete(key string) error {
 	revision, err := kv.store.Delete(key)
 	if err == nil {
 		// 通知Watch监听器
-		kv.watcher.NotifyDelete(key, revision)
+		kv.watcher.Notify(&watch.Event{Type: watch.EventDelete, Key: key, Revision: revision, Timestamp: time.Now()})
 	}
 	return err
 }
@@ -437,7 +438,7 @@ func (kv *KV) applyOp(op *kvpb.Op) *kvpb.OpResponse {
 			return &kvpb.OpResponse{Error: err.Error()}
 		}
 		// 通知Watch监听器
-		kv.watcher.NotifyPut(op.Key, string(op.Value), revision, op.Ttl)
+		kv.watcher.Notify(&watch.Event{Type: watch.EventPut, Key: op.Key, Value: string(op.Value), Revision: revision, Timestamp: time.Now(), TTL: op.Ttl})
 		return &kvpb.OpResponse{Key: op.Key, Version: revision}
 
 	case "GET":
@@ -458,7 +459,7 @@ func (kv *KV) applyOp(op *kvpb.Op) *kvpb.OpResponse {
 			return &kvpb.OpResponse{Key: op.Key, Error: err.Error()}
 		}
 		// 通知Watch监听器
-		kv.watcher.NotifyDelete(op.Key, revision)
+		kv.watcher.Notify(&watch.Event{Type: watch.EventDelete, Key: op.Key, Revision: revision, Timestamp: time.Now()})
 		return &kvpb.OpResponse{Key: op.Key, Version: revision}
 
 	default:
@@ -480,22 +481,13 @@ func (kv *KV) GetStats() map[string]interface{} {
 
 // WatchKey 监听指定键的变化
 func (kv *KV) WatchKey(key string) (*watch.Watcher, error) {
-	return kv.watcher.WatchKey(key)
-}
-
-// WatchPrefix 监听指定前缀的所有键的变化
-func (kv *KV) WatchPrefix(prefix string) (*watch.Watcher, error) {
-	return kv.watcher.WatchPrefix(prefix)
+	id := fmt.Sprintf("key_%s_%d", key, time.Now().UnixNano())
+	return kv.watcher.Watch(id, key, "")
 }
 
 // WatchKeyWithID 使用指定ID监听键的变化
 func (kv *KV) WatchKeyWithID(id, key string) (*watch.Watcher, error) {
-	return kv.watcher.WatchKeyWithID(id, key)
-}
-
-// WatchPrefixWithID 使用指定ID监听前缀的变化
-func (kv *KV) WatchPrefixWithID(id, prefix string) (*watch.Watcher, error) {
-	return kv.watcher.WatchPrefixWithID(id, prefix)
+	return kv.watcher.Watch(id, key, "")
 }
 
 // Unwatch 取消监听
@@ -575,7 +567,7 @@ func (kv *KV) ReplayWALsFrom(fromIdx uint64) error {
 	return kv.walManager.ReplayAllWALs(kv.ApplyWALEntry, fromIdx)
 }
 
-func (kv *KV) GetWALManager() *WALManager {
+func (kv *KV) GetWALManager() *wal.WALManager {
 	return kv.walManager
 }
 

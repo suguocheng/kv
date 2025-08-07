@@ -31,6 +31,21 @@ func NewKVServer(kv *kvstore.KV, rf *raft.Raft) *KVServer {
 	}
 }
 
+// StartGRPCServer 启动gRPC服务器
+func StartGRPCServer(addr string, kv *kvstore.KV, rf *raft.Raft) error {
+	lis, err := net.Listen("tcp", addr)
+	if err != nil {
+		return fmt.Errorf("failed to listen: %v", err)
+	}
+
+	grpcServer := grpc.NewServer()
+	kvServer := NewKVServer(kv, rf)
+	kvpb.RegisterKVServiceServer(grpcServer, kvServer)
+
+	fmt.Printf("gRPC server listening on %s\n", addr)
+	return grpcServer.Serve(lis)
+}
+
 // Get 实现Get RPC
 func (s *KVServer) Get(ctx context.Context, req *kvpb.GetRequest) (*kvpb.GetResponse, error) {
 	value, err := s.kv.Get(req.Key)
@@ -237,21 +252,15 @@ func (s *KVServer) Watch(req *kvpb.WatchRequest, stream kvpb.KVService_WatchServ
 	var watcher *watch.Watcher
 	var err error
 
-	// 根据请求类型创建监听器
-	if req.Key != "" {
-		if req.WatcherId != "" {
-			watcher, err = s.kv.WatchKeyWithID(req.WatcherId, req.Key)
-		} else {
-			watcher, err = s.kv.WatchKey(req.Key)
-		}
-	} else if req.Prefix != "" {
-		if req.WatcherId != "" {
-			watcher, err = s.kv.WatchPrefixWithID(req.WatcherId, req.Prefix)
-		} else {
-			watcher, err = s.kv.WatchPrefix(req.Prefix)
-		}
+	// 只支持单个键监听
+	if req.Key == "" {
+		return status.Error(codes.InvalidArgument, "key must be specified")
+	}
+
+	if req.WatcherId != "" {
+		watcher, err = s.kv.WatchKeyWithID(req.WatcherId, req.Key)
 	} else {
-		return status.Error(codes.InvalidArgument, "either key or prefix must be specified")
+		watcher, err = s.kv.WatchKey(req.Key)
 	}
 
 	if err != nil {
@@ -319,31 +328,12 @@ func (s *KVServer) GetWatchList(ctx context.Context, req *kvpb.GetWatchListReque
 	var watcherInfos []*kvpb.WatcherInfo
 	for _, watcher := range watchers {
 		if !watcher.IsClosed() {
-			target := watcher.Key
-			if target == "" {
-				target = watcher.Prefix + "*" // 前缀监听用*表示
-			}
 			watcherInfos = append(watcherInfos, &kvpb.WatcherInfo{
 				Id:     watcher.ID,
-				Target: target,
+				Target: watcher.Key,
 			})
 		}
 	}
 
 	return &kvpb.GetWatchListResponse{Watchers: watcherInfos}, nil
-}
-
-// StartGRPCServer 启动gRPC服务器
-func StartGRPCServer(addr string, kv *kvstore.KV, rf *raft.Raft) error {
-	lis, err := net.Listen("tcp", addr)
-	if err != nil {
-		return fmt.Errorf("failed to listen: %v", err)
-	}
-
-	grpcServer := grpc.NewServer()
-	kvServer := NewKVServer(kv, rf)
-	kvpb.RegisterKVServiceServer(grpcServer, kvServer)
-
-	fmt.Printf("gRPC server listening on %s\n", addr)
-	return grpcServer.Serve(lis)
 }

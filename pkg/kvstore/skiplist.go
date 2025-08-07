@@ -354,12 +354,16 @@ func (sl *SkipList) Compact(revision int64) (int64, error) {
 	}
 
 	compacted := 0
-	nodesToDelete := make([]*Node, 0)
 
 	// 遍历所有节点，压缩版本历史
 	x := sl.header.next[0]
 	for x != nil {
 		next := x.next[0] // 保存下一个节点，因为当前节点可能被删除
+
+		if len(x.versions) == 0 {
+			x = next
+			continue
+		}
 
 		// 找到需要保留的版本索引
 		keepIndex := -1
@@ -370,22 +374,19 @@ func (sl *SkipList) Compact(revision int64) (int64, error) {
 			}
 		}
 
+		// 如果所有版本都小于等于压缩版本，但至少保留最新版本
 		if keepIndex == -1 {
-			// 所有版本都可以删除
-			nodesToDelete = append(nodesToDelete, x)
-			compacted += len(x.versions)
-		} else if keepIndex >= 0 {
-			// 保留部分版本
+			// 保留最新版本（最后一个版本）
+			keepIndex = len(x.versions) - 1
+		}
+
+		// 压缩版本历史，保留从keepIndex开始的所有版本
+		if keepIndex > 0 {
 			x.versions = x.versions[keepIndex:]
 			compacted += keepIndex
 		}
 
 		x = next
-	}
-
-	// 删除需要删除的节点
-	for _, node := range nodesToDelete {
-		sl.deleteNode(node.key)
 	}
 
 	sl.compactedRev = revision

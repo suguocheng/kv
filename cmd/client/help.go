@@ -23,7 +23,7 @@ func printHelp() {
 	fmt.Println("    COMPACT revision                    - 压缩版本历史")
 	fmt.Println("    STATS                               - 获取统计信息")
 	fmt.Println("  Watch操作:")
-	fmt.Println("    WATCH key|prefix [id]               - 监听键或前缀的变化")
+	fmt.Println("    WATCH key                           - 监听键的变化")
 	fmt.Println("    UNWATCH watcher_id                  - 取消监听")
 	fmt.Println("    WATCHLIST                           - 显示活跃监听器列表")
 	fmt.Println("  其他:")

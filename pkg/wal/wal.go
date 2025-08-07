@@ -1,4 +1,4 @@
-package kvstore
+package wal
 
 import (
 	"encoding/binary"

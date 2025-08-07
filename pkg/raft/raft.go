@@ -7,9 +7,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"kv/pkg/kvstore"
 	"kv/pkg/proto/kvpb"
 	"kv/pkg/proto/raftpb"
+	"kv/pkg/wal"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -56,8 +56,8 @@ type Raft struct {
 	applyCh                               chan ApplyMsg
 	applyCond                             *sync.Cond
 	replicatorCond                        []*sync.Cond
-	walManager                            *kvstore.WALManager // 新增：WAL管理器
-	raftpb.UnimplementedRaftServiceServer                     // gRPC服务端接口嵌入
+	walManager                            *wal.WALManager // 新增：WAL管理器
+	raftpb.UnimplementedRaftServiceServer                 // gRPC服务端接口嵌入
 }
 
 // return currentTerm and whether this server
@@ -451,7 +451,7 @@ func (rf *Raft) connectToPeersGRPC() {
 	}
 }
 
-func Make(me int, peerAddrs map[int]string, myAddr string, applyCh chan ApplyMsg, statePath string, snapshotPath string, walManager *kvstore.WALManager) *Raft {
+func Make(me int, peerAddrs map[int]string, myAddr string, applyCh chan ApplyMsg, statePath string, snapshotPath string, walManager *wal.WALManager) *Raft {
 	rf := &Raft{
 		mu:             sync.RWMutex{},
 		peerAddrs:      peerAddrs,
