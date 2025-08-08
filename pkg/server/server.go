@@ -69,12 +69,23 @@ func (s *KVServer) Put(ctx context.Context, req *kvpb.PutRequest) (*kvpb.PutResp
 		return &kvpb.PutResponse{Error: "marshal failed"}, nil
 	}
 
-	_, _, isLeader := s.rf.Start(data)
+	index, _, isLeader := s.rf.Start(data)
 	if !isLeader {
 		return &kvpb.PutResponse{Error: "Not_Leader"}, nil
 	}
 
-	return &kvpb.PutResponse{Revision: 1}, nil // 简化处理，实际应该等待raft应用完成
+	// 等待raft应用完成
+	if !s.rf.WaitForIndex(index, 5*time.Second) {
+		return &kvpb.PutResponse{Error: "timeout"}, nil
+	}
+
+	// 检查是否仍然是leader
+	_, stillLeader := s.rf.GetState()
+	if !stillLeader {
+		return &kvpb.PutResponse{Error: "Not_Leader"}, nil
+	}
+
+	return &kvpb.PutResponse{Revision: int64(index)}, nil
 }
 
 // PutWithTTL 实现PutWithTTL RPC
@@ -85,12 +96,23 @@ func (s *KVServer) PutWithTTL(ctx context.Context, req *kvpb.PutWithTTLRequest) 
 		return &kvpb.PutResponse{Error: "marshal failed"}, nil
 	}
 
-	_, _, isLeader := s.rf.Start(data)
+	index, _, isLeader := s.rf.Start(data)
 	if !isLeader {
 		return &kvpb.PutResponse{Error: "Not_Leader"}, nil
 	}
 
-	return &kvpb.PutResponse{Revision: 1}, nil
+	// 等待raft应用完成
+	if !s.rf.WaitForIndex(index, 5*time.Second) {
+		return &kvpb.PutResponse{Error: "timeout"}, nil
+	}
+
+	// 检查是否仍然是leader
+	_, stillLeader := s.rf.GetState()
+	if !stillLeader {
+		return &kvpb.PutResponse{Error: "Not_Leader"}, nil
+	}
+
+	return &kvpb.PutResponse{Revision: int64(index)}, nil
 }
 
 // Delete 实现Delete RPC
@@ -101,12 +123,23 @@ func (s *KVServer) Delete(ctx context.Context, req *kvpb.DeleteRequest) (*kvpb.D
 		return &kvpb.DeleteResponse{Error: "marshal failed"}, nil
 	}
 
-	_, _, isLeader := s.rf.Start(data)
+	index, _, isLeader := s.rf.Start(data)
 	if !isLeader {
 		return &kvpb.DeleteResponse{Error: "Not_Leader"}, nil
 	}
 
-	return &kvpb.DeleteResponse{Revision: 1}, nil
+	// 等待raft应用完成
+	if !s.rf.WaitForIndex(index, 5*time.Second) {
+		return &kvpb.DeleteResponse{Error: "timeout"}, nil
+	}
+
+	// 检查是否仍然是leader
+	_, stillLeader := s.rf.GetState()
+	if !stillLeader {
+		return &kvpb.DeleteResponse{Error: "Not_Leader"}, nil
+	}
+
+	return &kvpb.DeleteResponse{Revision: int64(index)}, nil
 }
 
 // Txn 实现Txn RPC
@@ -215,11 +248,6 @@ func (s *KVServer) Range(ctx context.Context, req *kvpb.RangeRequest) (*kvpb.Ran
 
 // Compact 实现Compact RPC
 func (s *KVServer) Compact(ctx context.Context, req *kvpb.CompactRequest) (*kvpb.CompactResponse, error) {
-	compactedRev, err := s.kv.Compact(req.Revision)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
 	// 通过raft层执行压缩
 	op := &kvpb.Op{Type: "Compact", Key: "", Value: []byte(fmt.Sprintf("%d", req.Revision)), Ttl: 0}
 	data, err := proto.Marshal(op)
@@ -227,9 +255,26 @@ func (s *KVServer) Compact(ctx context.Context, req *kvpb.CompactRequest) (*kvpb
 		return nil, status.Error(codes.Internal, "marshal failed")
 	}
 
-	_, _, isLeader := s.rf.Start(data)
+	index, _, isLeader := s.rf.Start(data)
 	if !isLeader {
 		return nil, status.Error(codes.FailedPrecondition, "Not_Leader")
+	}
+
+	// 等待raft应用完成
+	if !s.rf.WaitForIndex(index, 5*time.Second) {
+		return nil, status.Error(codes.DeadlineExceeded, "timeout")
+	}
+
+	// 检查是否仍然是leader
+	_, stillLeader := s.rf.GetState()
+	if !stillLeader {
+		return nil, status.Error(codes.FailedPrecondition, "Not_Leader")
+	}
+
+	// 获取压缩后的版本号
+	compactedRev, err := s.kv.Compact(req.Revision)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &kvpb.CompactResponse{Revision: compactedRev}, nil

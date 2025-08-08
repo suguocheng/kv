@@ -1,3 +1,10 @@
 config.env
+
 history/
-servers.pid
+
+log/*
+!log/log.go
+
+test/logs/
+test/reports/
+test/results/

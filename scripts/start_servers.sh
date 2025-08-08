@@ -11,13 +11,11 @@ fi
 mkdir -p log
 
 echo "启动 $NODES 个KV服务器(go run)..."
-rm -f servers.pid
 
 for ((i=0; i<NODES; i++)); do
   LOGFILE="log/test${i}.log"
   echo "go run ./cmd/server $i > $LOGFILE 2>&1 &"
   nohup go run ./cmd/server $i > "$LOGFILE" 2>&1 &
-  echo $! >> servers.pid
 done
 
-echo "所有节点已启动，PID记录在 servers.pid"
+echo "所有节点已启动"

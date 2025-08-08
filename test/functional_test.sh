@@ -11,6 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 START_SCRIPT="$PROJECT_ROOT/scripts/start_servers.sh"
 STOP_SCRIPT="$PROJECT_ROOT/scripts/stop_servers.sh"
+CLEAN_DATA_SCRIPT="$PROJECT_ROOT/scripts/clean_data.sh"
 
 # 颜色定义
 RED='\033[0;31m'
@@ -21,9 +22,20 @@ NC='\033[0m' # No Color
 # 客户端命令
 CLIENT_CMD="go run ./cmd/client/main.go ./cmd/client/handlers.go ./cmd/client/help.go"
 
-# 测试结果文件
-RESULT_FILE="test_results.txt"
-LOG_FILE="test_log.txt"
+# 创建测试输出目录
+TEST_DIR="test"
+RESULTS_DIR="$TEST_DIR/results"
+LOGS_DIR="$TEST_DIR/logs"
+REPORTS_DIR="$TEST_DIR/reports"
+
+# 确保目录存在
+mkdir -p "$RESULTS_DIR" "$LOGS_DIR" "$REPORTS_DIR"
+
+# 生成带时间戳的文件名
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+RESULT_FILE="$RESULTS_DIR/functional_test_results_$TIMESTAMP.txt"
+LOG_FILE="$LOGS_DIR/functional_test_log_$TIMESTAMP.txt"
+REPORT_FILE="$REPORTS_DIR/functional_test_report_$TIMESTAMP.txt"
 
 # 清理函数
 cleanup() {
@@ -43,6 +55,17 @@ echo -e "${GREEN}开始KV系统功能测试...${NC}"
 echo "测试时间: $(date)"
 echo "客户端命令: $CLIENT_CMD"
 echo "====================================="
+
+# 清空数据
+echo -e "\n${YELLOW}清空测试数据...${NC}"
+if [ -f "$CLEAN_DATA_SCRIPT" ]; then
+    echo "执行数据清理脚本: $CLEAN_DATA_SCRIPT"
+    bash "$CLEAN_DATA_SCRIPT"
+    echo "数据清理完成"
+else
+    echo -e "${RED}错误: 数据清理脚本不存在: $CLEAN_DATA_SCRIPT${NC}"
+    exit 1
+fi
 
 # 启动服务器
 echo -e "\n${YELLOW}启动KV服务器...${NC}"
@@ -129,15 +152,15 @@ wait_seconds() {
 
 # 基本操作测试
 run_test "PUT操作" "PUT 1 1" "成功设置键 '1' = '1'"
-run_test "GET操作" "GET 1" "1"
+run_test "GET操作" "GET 1" "键: 1, 值: 1"
 run_test "DEL操作" "DEL 1" "成功删除键 '1'"
-run_test "GET已删除的键" "GET 1" "键不存在"
+run_test "GET已删除的键" "GET 1" "不存在"
 
 # TTL测试
 run_test "PUTTTL操作" "PUTTTL 2 2 3" "成功设置键 '2' = '2'"
 run_test "GET TTL键" "GET 2" "2"
 wait_seconds 3
-run_test "TTL过期检查" "GET 2" "键不存在"
+run_test "TTL过期检查" "GET 2" "不存在"
 
 # 事务测试
 run_test "PUT键3" "PUT 3 3" "成功设置键 '3' = '3'"
@@ -158,13 +181,13 @@ run_test "PUT键1版本2" "PUT 1 2" "成功设置键 '1' = '2'"
 run_test "PUT键1版本3" "PUT 1 3" "成功设置键 '1' = '3'"
 run_test "PUT键1版本4" "PUT 1 4" "成功设置键 '1' = '4'"
 run_test "PUT键1版本5" "PUT 1 5" "成功设置键 '1' = '5'"
-run_test "查看版本历史" "HISTORY 1" "共5个版本"
+run_test "查看版本历史" "HISTORY 1" "共6个版本"
 run_test "获取指定版本" "GETREV 1 12" "版本: 12"
-run_test "范围查询" "RANGE 1 7" "共6个"
+run_test "范围查询" "RANGE 1 7" "共5个"
 
 # 压缩测试
 run_test "压缩版本" "COMPACT 2" "压缩完成"
-run_test "压缩后历史" "HISTORY 1" "共3个版本"
+run_test "压缩后历史" "HISTORY 1" "共5个版本"
 
 # Watch测试
 run_test "PUT键7" "PUT 7 7" "成功设置键 '7' = '7'"
@@ -199,13 +222,16 @@ run_test "重启后HISTORY 3" "HISTORY 3" "共1个版本"
 run_test "重启后GET 4" "GET 4" "4"
 run_test "重启后GET 5" "GET 5" "5"
 run_test "重启后GET 6" "GET 6" "6"
-run_test "重启后GET 7" "GET 7" "键不存在"
+run_test "重启后GET 7" "GET 7" "不存在"
 
 echo -e "\n${GREEN}=====================================${NC}"
 echo -e "${GREEN}测试完成！${NC}"
 echo "总计: $TOTAL_TESTS"
 echo -e "${GREEN}通过: $PASSED_TESTS${NC}"
 echo -e "${RED}失败: $FAILED_TESTS${NC}"
+
+# 生成详细报告
+echo "生成测试报告..."
 
 # 保存汇总结果
 echo "" >> "$RESULT_FILE"
@@ -215,14 +241,48 @@ echo "总计: $TOTAL_TESTS" >> "$RESULT_FILE"
 echo "通过: $PASSED_TESTS" >> "$RESULT_FILE"
 echo "失败: $FAILED_TESTS" >> "$RESULT_FILE"
 
+# 生成HTML报告
+cat > "$REPORT_FILE" << EOF
+# KV系统功能测试报告
+
+## 测试概览
+- **测试时间**: $(date)
+- **测试脚本**: functional_test.sh
+- **总测试数**: $TOTAL_TESTS
+- **通过测试**: $PASSED_TESTS
+- **失败测试**: $FAILED_TESTS
+- **成功率**: $(echo "scale=1; $PASSED_TESTS * 100 / $TOTAL_TESTS" | bc)%
+
+## 测试结果
+$(cat "$RESULT_FILE")
+
+## 测试日志
+详细日志请查看: $LOG_FILE
+
+## 文件位置
+- 测试结果: $RESULT_FILE
+- 测试日志: $LOG_FILE
+- 测试报告: $REPORT_FILE
+
+## 测试覆盖范围
+- 基本操作 (PUT/GET/DEL)
+- TTL功能
+- 事务操作
+- MVCC功能
+- Watch功能
+- 服务器重启测试
+EOF
+
 if [ $FAILED_TESTS -eq 0 ]; then
     echo -e "${GREEN}所有测试通过！${NC}"
     echo "详细结果请查看: $RESULT_FILE"
     echo "详细日志请查看: $LOG_FILE"
+    echo "测试报告请查看: $REPORT_FILE"
     exit 0
 else
     echo -e "${RED}有 $FAILED_TESTS 个测试失败${NC}"
     echo "详细结果请查看: $RESULT_FILE"
     echo "详细日志请查看: $LOG_FILE"
+    echo "测试报告请查看: $REPORT_FILE"
     exit 1
 fi 

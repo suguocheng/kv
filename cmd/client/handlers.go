@@ -238,7 +238,7 @@ func parseOps(parts []string) ([]*kvpb.Op, error) {
 			i += 3
 		case "DEL":
 			ops = append(ops, &kvpb.Op{
-				Type: "DEL",
+				Type: "DELETE",
 				Key:  key,
 			})
 			i += 2
@@ -252,10 +252,12 @@ func parseOps(parts []string) ([]*kvpb.Op, error) {
 
 // formatTxnResponse 格式化事务响应
 func formatTxnResponse(resp *kvpb.TxnResponse) string {
-	if resp.Succeeded {
+	// Succeeded表示条件是否为真，而不是事务是否成功
+	// 无论条件真假，只要操作执行了就是成功的
+	if len(resp.Responses) > 0 {
 		return fmt.Sprintf("成功 (执行了 %d 个操作)", len(resp.Responses))
 	} else {
-		return fmt.Sprintf("失败 (执行了 %d 个操作)", len(resp.Responses))
+		return fmt.Sprintf("失败 (没有执行任何操作)")
 	}
 }
 
