@@ -22,8 +22,6 @@ func main() {
 
 	cli := client.NewClient(cfg.Client.Servers)
 
-	printHelp()
-
 	// 初始化 liner
 	line := liner.NewLiner()
 	defer line.Close()

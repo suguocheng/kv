@@ -47,8 +47,15 @@ func NewKV(walDir string, maxEntriesPerFile int) (*KV, error) {
 
 	// 1. 先从快照恢复
 	_ = kv.RestoreFromSnapshot()
+
+	// 2. 根据快照状态决定从哪个索引开始重放WAL
 	fromIdx := uint64(1)
-	// 2. 自动重放WAL，恢复未快照的内容
+	if kv.store.currentRevision > 1 {
+		// 如果有快照，从快照点之后开始重放
+		fromIdx = uint64(kv.store.currentRevision)
+	}
+
+	// 3. 自动重放WAL，恢复未快照的内容
 	walManager.ReplayAllWALs(kv.ApplyWALEntry, fromIdx)
 
 	// 启动定期清理过期键的goroutine
@@ -112,7 +119,7 @@ func (kv *KV) RestoreFromSnapshot() error {
 			ModRev:     pair.ModRevision,
 			Version:    pair.Version,
 			Deleted:    pair.Deleted,
-			CreatedAt:  0, // 可选: 若有CreatedAt字段可补充
+			CreatedAt:  time.Now().Unix(), // 使用当前时间作为恢复时间
 		})
 	}
 	kv.store.currentRevision = mvccStore.CurrentRevision
@@ -140,7 +147,7 @@ func (kv *KV) RestoreFromSnapshotData(snapshot []byte) error {
 			ModRev:     pair.ModRevision,
 			Version:    pair.Version,
 			Deleted:    pair.Deleted,
-			CreatedAt:  0, // 可选: 若有CreatedAt字段可补充
+			CreatedAt:  time.Now().Unix(), // 使用当前时间作为恢复时间
 		})
 	}
 	kv.store.currentRevision = mvccStore.CurrentRevision
@@ -315,10 +322,44 @@ func (kv *KV) TxnWithoutWAL(req *kvpb.TxnRequest) (*kvpb.TxnResponse, error) {
 		ops = req.Failure
 	}
 
-	// 不写入WAL，直接执行操作
+	// 不写入WAL，直接执行操作，避免重复生成版本号
 	responses := make([]*kvpb.OpResponse, 0, len(ops))
 	for _, op := range ops {
-		resp := kv.applyOp(op)
+		var resp *kvpb.OpResponse
+		switch op.Type {
+		case "PUT":
+			revision, err := kv.store.Put(op.Key, string(op.Value), op.Ttl)
+			if err != nil {
+				resp = &kvpb.OpResponse{Error: err.Error()}
+			} else {
+				// 通知Watch监听器
+				kv.watcher.Notify(&watch.Event{Type: watch.EventPut, Key: op.Key, Value: string(op.Value), Revision: revision, Timestamp: time.Now(), TTL: op.Ttl})
+				resp = &kvpb.OpResponse{Key: op.Key, Version: revision}
+			}
+		case "GET":
+			versionedKV, err := kv.store.Get(op.Key, 0)
+			if err != nil {
+				resp = &kvpb.OpResponse{Key: op.Key, Error: err.Error()}
+			} else {
+				resp = &kvpb.OpResponse{
+					Key:     op.Key,
+					Value:   versionedKV.Value,
+					Version: versionedKV.ModRev,
+					Exists:  true,
+				}
+			}
+		case "DELETE":
+			revision, err := kv.store.Delete(op.Key)
+			if err != nil {
+				resp = &kvpb.OpResponse{Key: op.Key, Error: err.Error()}
+			} else {
+				// 通知Watch监听器
+				kv.watcher.Notify(&watch.Event{Type: watch.EventDelete, Key: op.Key, Revision: revision, Timestamp: time.Now()})
+				resp = &kvpb.OpResponse{Key: op.Key, Version: revision}
+			}
+		default:
+			resp = &kvpb.OpResponse{Error: "unknown operation type"}
+		}
 		responses = append(responses, resp)
 	}
 
@@ -546,7 +587,25 @@ func (kv *KV) ApplyWALEntry(entry *kvpb.WALEntry) error {
 			ops = req.Failure
 		}
 		for _, subOp := range ops {
-			kv.applyOp(subOp)
+			// 在WAL重放时，使用指定的版本号而不是生成新的
+			switch subOp.Type {
+			case "PUT":
+				// 直接调用store的Put方法，但使用当前revision
+				_, err := kv.store.Put(subOp.Key, string(subOp.Value), subOp.Ttl)
+				if err != nil {
+					return err
+				}
+			case "DELETE":
+				_, err := kv.store.Delete(subOp.Key)
+				if err != nil {
+					return err
+				}
+			case "GET":
+				// GET操作不需要修改状态，跳过
+				continue
+			default:
+				return fmt.Errorf("unknown subOp type in Txn: %s", subOp.Type)
+			}
 		}
 		return nil
 	case "Compact":

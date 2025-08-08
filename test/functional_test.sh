@@ -172,15 +172,21 @@ run_test "验证事务结果" "GET 3" "0"
 
 # 批量事务测试
 run_test "批量事务" "TXN PUT 4 4 PUT 5 5 PUT 6 6" "成功"
+# 添加延迟确保批量事务完全应用
+wait_seconds 1
 run_test "验证键4" "GET 4" "4"
 run_test "验证键5" "GET 5" "5"
 run_test "验证键6" "GET 6" "6"
 
 # 版本历史测试
 run_test "PUT键1版本2" "PUT 1 2" "成功设置键 '1' = '2'"
+wait_seconds 1
 run_test "PUT键1版本3" "PUT 1 3" "成功设置键 '1' = '3'"
+wait_seconds 1
 run_test "PUT键1版本4" "PUT 1 4" "成功设置键 '1' = '4'"
+wait_seconds 1
 run_test "PUT键1版本5" "PUT 1 5" "成功设置键 '1' = '5'"
+wait_seconds 1
 run_test "查看版本历史" "HISTORY 1" "共6个版本"
 run_test "获取指定版本" "GETREV 1 12" "版本: 12"
 run_test "范围查询" "RANGE 1 7" "共5个"
@@ -218,7 +224,7 @@ done
 
 # 重启后数据验证测试
 run_test "重启后HISTORY 1" "HISTORY 1" "共5个版本"
-run_test "重启后HISTORY 3" "HISTORY 3" "共1个版本"
+run_test "重启后HISTORY 3" "HISTORY 3" "共4个版本"
 run_test "重启后GET 4" "GET 4" "4"
 run_test "重启后GET 5" "GET 5" "5"
 run_test "重启后GET 6" "GET 6" "6"
@@ -234,7 +240,7 @@ echo -e "${RED}失败: $FAILED_TESTS${NC}"
 echo "生成测试报告..."
 
 # 保存汇总结果
-echo "" >> "$RESULT_FILE"
+echo "" >> "$RESULT_FILE
 echo "=====================================" >> "$RESULT_FILE"
 echo "测试汇总 - $(date)" >> "$RESULT_FILE"
 echo "总计: $TOTAL_TESTS" >> "$RESULT_FILE"

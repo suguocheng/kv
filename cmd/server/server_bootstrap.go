@@ -15,13 +15,14 @@ import (
 )
 
 type NodeConfig struct {
-	Me            int
-	ClientAddr    string
-	PeerAddrs     map[int]string
-	RaftStatePath string
-	SnapshotPath  string
-	WALDir        string
-	MaxWALEntries int // 每个WAL文件最大条目数
+	Me               int
+	ClientAddr       string
+	PeerAddrs        map[int]string
+	RaftStatePath    string
+	SnapshotPath     string
+	WALDir           string
+	MaxWALEntries    int // 每个WAL文件最大条目数
+	SnapshotInterval int // 快照间隔
 }
 
 func parseNodeID() int {
@@ -53,13 +54,14 @@ func loadNodeConfig(me int) *NodeConfig {
 	snapshotPath := cfg.GetSnapshotPath(me)
 
 	return &NodeConfig{
-		Me:            me,
-		ClientAddr:    clientAddr,
-		PeerAddrs:     peerAddrs,
-		RaftStatePath: raftStatePath,
-		SnapshotPath:  snapshotPath,
-		WALDir:        walDir,
-		MaxWALEntries: serverConfig.MaxWALEntries,
+		Me:               me,
+		ClientAddr:       clientAddr,
+		PeerAddrs:        peerAddrs,
+		RaftStatePath:    raftStatePath,
+		SnapshotPath:     snapshotPath,
+		WALDir:           walDir,
+		MaxWALEntries:    serverConfig.MaxWALEntries,
+		SnapshotInterval: serverConfig.SnapshotInterval,
 	}
 }
 
@@ -76,7 +78,7 @@ func initRaft(conf *NodeConfig, kv *kvstore.KV) (*raft.Raft, chan raft.ApplyMsg)
 	wm := kv.GetWALManager()
 	rf := raft.Make(conf.Me, conf.PeerAddrs, conf.ClientAddr, applyCh, conf.RaftStatePath, conf.SnapshotPath, wm)
 
-	go startApplyLoop(rf, kv, applyCh)
+	go startApplyLoop(rf, kv, applyCh, conf.SnapshotInterval)
 
 	return rf, applyCh
 }
@@ -91,7 +93,7 @@ func startRaftGRPCServer(rf *raft.Raft, addr string) {
 	}()
 }
 
-func startApplyLoop(rf *raft.Raft, kv *kvstore.KV, applyCh chan raft.ApplyMsg) {
+func startApplyLoop(rf *raft.Raft, kv *kvstore.KV, applyCh chan raft.ApplyMsg, snapshotInterval int) {
 	lastSnapshottedIndex := 0
 	go func() {
 		wm := kv.GetWALManager()
@@ -122,7 +124,8 @@ func startApplyLoop(rf *raft.Raft, kv *kvstore.KV, applyCh chan raft.ApplyMsg) {
 					case "Txn":
 						var req kvpb.TxnRequest
 						if err := proto.Unmarshal(op.Value, &req); err == nil {
-							if err := kv.ApplyTxnProto(&req); err != nil {
+							// 在raft层应用时，使用TxnWithoutWAL避免重复生成版本号
+							if _, err := kv.TxnWithoutWAL(&req); err != nil {
 								fmt.Printf("Failed to apply transaction: %v\n", err)
 							}
 						} else {
@@ -132,7 +135,7 @@ func startApplyLoop(rf *raft.Raft, kv *kvstore.KV, applyCh chan raft.ApplyMsg) {
 						fmt.Println("Unknown Op type:", op.Type)
 					}
 
-					if msg.CommandIndex%5 == 0 && msg.CommandIndex > lastSnapshottedIndex {
+					if msg.CommandIndex%snapshotInterval == 0 && msg.CommandIndex > lastSnapshottedIndex {
 						snapshot, _ := kv.SerializeState()
 						rf.Snapshot(msg.CommandIndex, snapshot)
 						lastSnapshottedIndex = msg.CommandIndex

@@ -366,10 +366,11 @@ func (sl *SkipList) Compact(revision int64) (int64, error) {
 		}
 
 		// 找到需要保留的版本索引
+		// 保留所有大于压缩版本的版本，以及最后一个小于等于压缩版本的版本
 		keepIndex := -1
 		for i, version := range x.versions {
 			if version.ModRev > revision {
-				keepIndex = i - 1
+				keepIndex = i
 				break
 			}
 		}
@@ -378,6 +379,9 @@ func (sl *SkipList) Compact(revision int64) (int64, error) {
 		if keepIndex == -1 {
 			// 保留最新版本（最后一个版本）
 			keepIndex = len(x.versions) - 1
+		} else if keepIndex > 0 {
+			// 保留最后一个小于等于压缩版本的版本
+			keepIndex = keepIndex - 1
 		}
 
 		// 压缩版本历史，保留从keepIndex开始的所有版本
@@ -543,6 +547,14 @@ func (sl *SkipList) RestoreVersion(version *VersionedKV) {
 	defer sl.mu.Unlock()
 
 	node := sl.findOrCreateNode(version.Key)
+
+	// 检查是否已存在相同ModRev的版本，避免重复插入
+	for _, v := range node.versions {
+		if v.ModRev == version.ModRev {
+			return // 已存在，跳过
+		}
+	}
+
 	// 保证历史版本按ModRev递增插入
 	inserted := false
 	for i, v := range node.versions {

@@ -12,7 +12,7 @@ func main() {
 	// 启动 Raft gRPC 服务端，监听 peer 通信端口
 	startRaftGRPCServer(rf, conf.PeerAddrs[me])
 
-	startApplyLoop(rf, kv, applyCh)
+	startApplyLoop(rf, kv, applyCh, conf.SnapshotInterval)
 
 	startClientListener(conf.ClientAddr, kv, rf)
 }
