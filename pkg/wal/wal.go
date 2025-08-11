@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"kv/pkg/proto/kvpb"
 
@@ -32,6 +33,7 @@ type WALFile struct {
 }
 
 type WALManager struct {
+	mu         sync.RWMutex
 	walDir     string
 	walFiles   []*WALFile
 	currentWAL *WALFile
@@ -112,6 +114,7 @@ func NewWALManager(walDir string, maxEntriesPerFile int) (*WALManager, error) {
 }
 
 func (wm *WALManager) createNewWALFile(startIdx uint64) error {
+	// 注意：这个方法只在WriteEntry中被调用，而WriteEntry已经有锁保护
 	endIdx := startIdx + uint64(wm.maxEntries) - 1
 	walPath := filepath.Join(wm.walDir, fmt.Sprintf("%d-%d.wal", startIdx, endIdx))
 	file, err := os.OpenFile(walPath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0644)
@@ -132,20 +135,40 @@ func (wm *WALManager) createNewWALFile(startIdx uint64) error {
 }
 
 func (wm *WALManager) WriteEntry(entry *kvpb.WALEntry) error {
-	// 去重：如果 index 已经存在于当前或历史 WAL 文件，则跳过写入
-	for _, walFile := range wm.walFiles {
-		if entry.Index >= walFile.StartIdx && entry.Index <= walFile.EndIdx {
-			return nil // 已经写过，直接返回
-		}
+	// 检查参数
+	if entry == nil {
+		return fmt.Errorf("entry cannot be nil")
 	}
-	if wm.currentWAL != nil && entry.Index <= wm.currentWAL.EndIdx {
-		return nil // 当前分段已写过
-	}
-	if wm.currentWAL == nil || wm.currentWAL.entries >= wm.currentWAL.maxEntries {
-		var newStartIdx uint64 = entry.Index
-		if wm.currentWAL != nil {
-			newStartIdx = wm.currentWAL.StartIdx + uint64(wm.currentWAL.maxEntries)
+
+	wm.mu.Lock()
+	defer wm.mu.Unlock()
+
+	// 去重：只检查当前文件，避免过于严格的去重逻辑
+	// 检查当前WAL文件是否适合写入这个Index
+	if wm.currentWAL != nil {
+		// 如果Index小于当前文件的StartIdx，说明应该写入之前的文件
+		if entry.Index < wm.currentWAL.StartIdx {
+			// 检查是否在之前的文件中
+			for _, walFile := range wm.walFiles {
+				if walFile != wm.currentWAL && entry.Index >= walFile.StartIdx && entry.Index <= walFile.EndIdx {
+					return nil // 已经写过，直接返回
+				}
+			}
+			// 如果不在任何文件中，说明Index有问题
+			return fmt.Errorf("Index %d is too small for current WAL file (StartIdx: %d)", entry.Index, wm.currentWAL.StartIdx)
 		}
+		// 注意：在并发情况下，不进行严格的去重检查，允许重复写入
+	}
+	// 检查是否需要创建新文件
+	if wm.currentWAL == nil {
+		// 第一个文件，从entry.Index开始
+		if err := wm.createNewWALFile(entry.Index); err != nil {
+			return err
+		}
+	} else if wm.currentWAL.entries >= wm.currentWAL.maxEntries {
+		// 当前文件已满，创建新文件
+		// 新文件的StartIdx应该是当前文件EndIdx + 1
+		newStartIdx := wm.currentWAL.EndIdx + 1
 		if err := wm.createNewWALFile(newStartIdx); err != nil {
 			return err
 		}
@@ -168,6 +191,8 @@ func (wm *WALManager) WriteEntry(entry *kvpb.WALEntry) error {
 }
 
 func (wm *WALManager) ReplayAllWALs(apply func(*kvpb.WALEntry) error, fromIdx uint64) error {
+	wm.mu.RLock()
+	defer wm.mu.RUnlock()
 	files, err := os.ReadDir(wm.walDir)
 	if err != nil {
 		return err
@@ -219,6 +244,8 @@ func (wm *WALManager) ReplayAllWALs(apply func(*kvpb.WALEntry) error, fromIdx ui
 }
 
 func (wm *WALManager) CleanupWALFiles(snapshotIdx uint64) error {
+	wm.mu.Lock()
+	defer wm.mu.Unlock()
 	var filesToDelete []string
 	var filesToKeep []*WALFile
 	for _, walFile := range wm.walFiles {

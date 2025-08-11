@@ -61,7 +61,8 @@ func (rf *Raft) sendRequestVote(server int, args *raftpb.RequestVoteArgs, reply 
 		log.Printf("gRPC RequestVote to %d failed: %v", server, err)
 		return false
 	}
-	*reply = *resp
+	reply.Term = resp.Term
+	reply.VoteGranted = resp.VoteGranted
 	return true
 }
 
@@ -216,7 +217,11 @@ func (rf *Raft) sendAppendEntries(server int, args *raftpb.AppendEntriesArgs, re
 		log.Printf("gRPC AppendEntries to %d failed: %v", server, err)
 		return false
 	}
-	*reply = *resp
+	reply.Term = resp.Term
+	reply.Success = resp.Success
+	reply.XTerm = resp.XTerm
+	reply.XIndex = resp.XIndex
+	reply.XLen = resp.XLen
 	return true
 }
 
@@ -265,6 +270,6 @@ func (rf *Raft) sendInstallSnapshot(server int, args *raftpb.InstallSnapshotArgs
 		log.Printf("gRPC InstallSnapshot to %d failed: %v", server, err)
 		return false
 	}
-	*reply = *resp
+	reply.Term = resp.Term
 	return true
 }

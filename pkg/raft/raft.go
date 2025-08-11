@@ -191,9 +191,8 @@ func (rf *Raft) broadcastAppendEntries(i int) {
 		}
 	} else {
 		prevLogTerm := rf.logs[prevLogIndex-rf.getFirstLog().Index].Term
-		var entries []LogEntry
 
-		entries = make([]LogEntry, len(rf.logs[prevLogIndex-rf.getFirstLog().Index+1:]))
+		entries := make([]LogEntry, len(rf.logs[prevLogIndex-rf.getFirstLog().Index+1:]))
 		copy(entries, rf.logs[prevLogIndex-rf.getFirstLog().Index+1:])
 
 		args := raftpb.AppendEntriesArgs{
@@ -434,9 +433,10 @@ func (rf *Raft) connectToPeersGRPC() {
 			continue
 		}
 		go func(id int, addr string) {
-			for {
-				conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-
+			maxRetries := 10
+			retryCount := 0
+			for retryCount < maxRetries {
+				conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock(), grpc.WithTimeout(2*time.Second))
 				if err == nil {
 					client := raftpb.NewRaftServiceClient(conn)
 					rf.mu.Lock()
@@ -445,8 +445,11 @@ func (rf *Raft) connectToPeersGRPC() {
 					log.Printf("gRPC连接%d号节点成功", id)
 					return // gRPC 长连接，无需保活循环
 				}
-				time.Sleep(1 * time.Second)
+				retryCount++
+				log.Printf("gRPC连接%d号节点失败，重试 %d/%d: %v", id, retryCount, maxRetries, err)
+				time.Sleep(500 * time.Millisecond)
 			}
+			log.Printf("gRPC连接%d号节点最终失败", id)
 		}(id, addr)
 	}
 }

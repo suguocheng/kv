@@ -24,6 +24,13 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# 获取脚本所在目录的上级目录（项目根目录）
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# 切换到项目根目录
+cd "$PROJECT_ROOT"
+
 # 检查data目录是否存在
 if [ ! -d "data" ]; then
     print_error "data目录不存在"
