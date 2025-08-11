@@ -35,6 +35,8 @@ type Node struct {
 	key      string
 	versions []*VersionedKV // 版本历史，按版本号排序
 	next     []*Node
+	// 版本索引：map[revision]index，加速版本查找
+	versionIndex map[int64]int
 }
 
 // SkipList 支持MVCC和TTL的跳表
@@ -45,18 +47,37 @@ type SkipList struct {
 	mu              sync.RWMutex
 	currentRevision int64
 	compactedRev    int64
+	// 分段锁，用于减少锁竞争
+	segmentLocks []sync.RWMutex
 }
 
 // NewSkipList 创建新的跳表
 func NewSkipList() *SkipList {
-	return &SkipList{
+	sl := &SkipList{
 		header: &Node{
 			next: make([]*Node, maxLevel),
 		},
 		level:           1,
 		rand:            rand.New(rand.NewSource(time.Now().UnixNano())),
 		currentRevision: 1,
+		segmentLocks:    make([]sync.RWMutex, 16), // 16个分段锁
 	}
+	return sl
+}
+
+// getSegmentLock 根据key获取对应的分段锁
+func (sl *SkipList) getSegmentLock(key string) *sync.RWMutex {
+	hash := hashString(key)
+	return &sl.segmentLocks[hash%16]
+}
+
+// hashString 简单的字符串哈希函数
+func hashString(s string) uint32 {
+	h := uint32(0)
+	for i := 0; i < len(s); i++ {
+		h = 31*h + uint32(s[i])
+	}
+	return h
 }
 
 // randomLevel 生成节点层数
@@ -70,8 +91,9 @@ func (sl *SkipList) randomLevel() int {
 
 // Put 插入或更新键值对，创建新版本
 func (sl *SkipList) Put(key, value string, ttl int64) (int64, error) {
-	sl.mu.Lock()
-	defer sl.mu.Unlock()
+	segmentLock := sl.getSegmentLock(key)
+	segmentLock.Lock()
+	defer segmentLock.Unlock()
 
 	// 分配新版本号
 	revision := sl.currentRevision
@@ -101,6 +123,8 @@ func (sl *SkipList) Put(key, value string, ttl int64) (int64, error) {
 
 	// 添加新版本到历史
 	node.versions = append(node.versions, versionedKV)
+	// 更新版本索引
+	node.versionIndex[revision] = len(node.versions) - 1
 
 	return revision, nil
 }
@@ -133,9 +157,10 @@ func (sl *SkipList) findOrCreateNode(key string) *Node {
 	}
 
 	newNode := &Node{
-		key:      key,
-		versions: make([]*VersionedKV, 0),
-		next:     make([]*Node, lvl),
+		key:          key,
+		versions:     make([]*VersionedKV, 0),
+		next:         make([]*Node, lvl),
+		versionIndex: make(map[int64]int),
 	}
 
 	for i := 0; i < lvl; i++ {
@@ -148,8 +173,9 @@ func (sl *SkipList) findOrCreateNode(key string) *Node {
 
 // Get 获取键值对，支持版本查询
 func (sl *SkipList) Get(key string, revision int64) (*VersionedKV, error) {
-	sl.mu.RLock()
-	defer sl.mu.RUnlock()
+	segmentLock := sl.getSegmentLock(key)
+	segmentLock.RLock()
+	defer segmentLock.RUnlock()
 
 	node := sl.findNode(key)
 	if node == nil {
@@ -204,7 +230,27 @@ func (sl *SkipList) findNode(key string) *Node {
 
 // getAtRevision 获取指定版本号的键值对
 func (sl *SkipList) getAtRevision(node *Node, revision int64) (*VersionedKV, error) {
-	// 二分查找最接近但不大于指定版本号的版本
+	// 首先尝试直接索引查找
+	if index, exists := node.versionIndex[revision]; exists {
+		target := node.versions[index]
+
+		// 检查是否已删除
+		if target.Deleted {
+			return nil, ErrKeyDeleted
+		}
+
+		// 检查TTL
+		if target.TTL > 0 {
+			now := time.Now().Unix()
+			if now-target.CreatedAt >= target.TTL {
+				return nil, ErrKeyExpired
+			}
+		}
+
+		return target, nil
+	}
+
+	// 如果直接索引未找到，使用二分查找最接近但不大于指定版本号的版本
 	left, right := 0, len(node.versions)-1
 	var target *VersionedKV
 
@@ -242,8 +288,9 @@ func (sl *SkipList) getAtRevision(node *Node, revision int64) (*VersionedKV, err
 
 // Delete 删除键，创建删除版本
 func (sl *SkipList) Delete(key string) (int64, error) {
-	sl.mu.Lock()
-	defer sl.mu.Unlock()
+	segmentLock := sl.getSegmentLock(key)
+	segmentLock.Lock()
+	defer segmentLock.Unlock()
 
 	// 分配新版本号
 	revision := sl.currentRevision

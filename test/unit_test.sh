@@ -2,6 +2,9 @@
 
 # KV系统单元测试脚本
 # 自动执行所有Go单元测试并生成报告
+#
+# 环境变量:
+#   暂无特殊环境变量
 
 set -e
 
@@ -50,14 +53,17 @@ run_package_test() {
     local test_name="$3"
     
     print_subsection "测试包: $package_name"
-echo "路径: $package_path"
+    echo "路径: $package_path"
     
     # 运行测试并收集覆盖率
     local output
     local exit_code
     
     if [ -d "$package_path" ]; then
-        output=$(cd "$package_path" && go test -v -coverprofile=coverage.tmp 2>&1)
+        # 运行测试并收集覆盖率
+        local test_cmd="go test -v -coverprofile=coverage.tmp -timeout 120s"
+        
+        output=$(cd "$package_path" && $test_cmd 2>&1)
         exit_code=$?
         
         # 如果测试成功，收集覆盖率数据

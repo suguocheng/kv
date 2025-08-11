@@ -11,6 +11,14 @@ import (
 	"kv/pkg/proto/kvpb"
 )
 
+// ==================== WAL功能测试 ====================
+// 本文件包含WAL的功能测试，使用生产环境配置（1000条目/文件）
+// 主要用于：
+// 1. 验证WAL功能
+// 2. 单元测试和CI/CD
+// 3. 生产环境配置验证
+// 4. 性能测试
+
 func setupTestWAL(t *testing.T) (*WALManager, string) {
 	// 创建临时目录
 	tempDir, err := os.MkdirTemp("", "wal_test")
@@ -18,8 +26,8 @@ func setupTestWAL(t *testing.T) (*WALManager, string) {
 		t.Fatal(err)
 	}
 
-	// 创建WAL管理器
-	walManager, err := NewWALManager(tempDir, 5)
+	// 创建WAL管理器 - 使用生产环境配置
+	walManager, err := NewWALManager(tempDir, 1000)
 	if err != nil {
 		os.RemoveAll(tempDir)
 		t.Fatal(err)
@@ -55,8 +63,8 @@ func TestWALManagerCreation(t *testing.T) {
 		t.Error("Expected WAL directory to be set")
 	}
 
-	if walManager.maxEntries != 5 {
-		t.Errorf("Expected maxEntries=5, got %d", walManager.maxEntries)
+	if walManager.maxEntries != 1000 {
+		t.Errorf("Expected maxEntries=1000, got %d", walManager.maxEntries)
 	}
 }
 
@@ -94,7 +102,7 @@ func TestWALFileRotation(t *testing.T) {
 	defer cleanupTestWAL(walManager, tempDir)
 
 	// 写入超过最大条目数的条目，触发文件轮转
-	for i := 1; i <= 150; i++ {
+	for i := 1; i <= 1500; i++ {
 		entry := &kvpb.WALEntry{
 			Term:  uint64(i),
 			Index: uint64(i),
@@ -216,8 +224,8 @@ func TestWALCleanup(t *testing.T) {
 	walManager, tempDir := setupTestWAL(t)
 	defer cleanupTestWAL(walManager, tempDir)
 
-	// 写入一些条目（超过5个以触发文件轮转）
-	for i := 1; i <= 15; i++ {
+	// 写入一些条目（超过1000个以触发文件轮转）
+	for i := 1; i <= 1500; i++ {
 		entry := &kvpb.WALEntry{
 			Term:  uint64(i),
 			Index: uint64(i),
@@ -235,8 +243,8 @@ func TestWALCleanup(t *testing.T) {
 	initialFileCount := len(walManager.walFiles)
 	fmt.Printf("Initial file count: %d\n", initialFileCount)
 
-	// 清理到索引8（清理前两个文件，它们的EndIdx分别是5和10）
-	err := walManager.CleanupWALFiles(8)
+	// 清理到索引1500（清理第一个文件，它的EndIdx是1000）
+	err := walManager.CleanupWALFiles(1500)
 	if err != nil {
 		t.Errorf("CleanupWALFiles failed: %v", err)
 	}
@@ -257,7 +265,7 @@ func TestWALPersistence(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	// 创建第一个WAL管理器
-	walManager1, err := NewWALManager(tempDir, 100)
+	walManager1, err := NewWALManager(tempDir, 1000)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -282,7 +290,7 @@ func TestWALPersistence(t *testing.T) {
 	cleanupTestWAL(walManager1, "")
 
 	// 创建第二个WAL管理器，应该恢复数据
-	walManager2, err := NewWALManager(tempDir, 100)
+	walManager2, err := NewWALManager(tempDir, 1000)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -321,8 +329,8 @@ func TestWALConcurrentWrites(t *testing.T) {
 	const numWritesPerGoroutine = 3
 	done := make(chan bool, numGoroutines)
 
-	// 使用原子计数器来生成唯一的Index
-	var indexCounter int32 = 0
+	// 使用原子计数器来生成唯一的Index，从1开始
+	var indexCounter int32 = 1
 
 	for i := 0; i < numGoroutines; i++ {
 		go func(id int) {
@@ -411,7 +419,7 @@ func TestWALEntryTypes(t *testing.T) {
 
 func TestWALErrorHandling(t *testing.T) {
 	// 测试无效目录
-	_, err := NewWALManager("/invalid/path/that/does/not/exist", 100)
+	_, err := NewWALManager("/invalid/path/that/does/not/exist", 1000)
 	if err == nil {
 		t.Error("Expected error for invalid directory")
 	}
@@ -456,7 +464,7 @@ func TestWALFileNaming(t *testing.T) {
 	defer cleanupTestWAL(walManager, tempDir)
 
 	// 写入足够多的条目触发文件轮转
-	for i := 1; i <= 150; i++ {
+	for i := 1; i <= 1500; i++ {
 		entry := &kvpb.WALEntry{
 			Term:  uint64(i),
 			Index: uint64(i),
@@ -484,7 +492,7 @@ func TestWALStats(t *testing.T) {
 	defer cleanupTestWAL(walManager, tempDir)
 
 	// 写入一些条目
-	for i := 1; i <= 50; i++ {
+	for i := 1; i <= 500; i++ {
 		entry := &kvpb.WALEntry{
 			Term:  uint64(i),
 			Index: uint64(i),
