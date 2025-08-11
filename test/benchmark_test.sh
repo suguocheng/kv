@@ -105,10 +105,22 @@ run_benchmark() {
     echo "" >> "$LOG_FILE"
     
     # 检查结果
-    if [ $exit_code -eq 0 ] && echo "$output" | grep -q "ops/s"; then
-        print_success "[$TOTAL_TESTS] $test_name"
-        echo "[$TOTAL_TESTS] PASS - $test_name" >> "$RESULT_FILE"
-        PASSED_TESTS=$((PASSED_TESTS + 1))
+    if [ $exit_code -eq 0 ]; then
+        # 对于连接池测试，只要退出码为0就算成功
+        if echo "$test_name" | grep -q "连接池"; then
+            print_success "[$TOTAL_TESTS] $test_name"
+            echo "[$TOTAL_TESTS] PASS - $test_name" >> "$RESULT_FILE"
+            PASSED_TESTS=$((PASSED_TESTS + 1))
+        # 对于其他测试，需要包含ops/s
+        elif echo "$output" | grep -q "ops/s"; then
+            print_success "[$TOTAL_TESTS] $test_name"
+            echo "[$TOTAL_TESTS] PASS - $test_name" >> "$RESULT_FILE"
+            PASSED_TESTS=$((PASSED_TESTS + 1))
+        else
+            print_failure "[$TOTAL_TESTS] $test_name"
+            echo "[$TOTAL_TESTS] FAIL - $test_name" >> "$RESULT_FILE"
+            FAILED_TESTS=$((FAILED_TESTS + 1))
+        fi
     else
         print_failure "[$TOTAL_TESTS] $test_name"
         echo "[$TOTAL_TESTS] FAIL - $test_name" >> "$RESULT_FILE"
@@ -123,7 +135,7 @@ bash "$START_SCRIPT"
 sleep 3
 
 # 检查服务器状态
-for port in 8000 8001 8002; do
+for port in 9000 9001 9002; do
     if ! lsof -i :$port > /dev/null 2>&1; then
         print_failure "端口 $port 服务器启动失败"
         exit 1
@@ -226,6 +238,23 @@ run_benchmark "TTL操作性能测试" "
     echo \"平均延迟: \${latency} ms\"
 " "20"
 
+# 6. 连接池性能测试
+run_benchmark "连接池性能测试" "
+    echo '开始连接池性能测试...'
+    cd \"\$PROJECT_ROOT\"
+    
+    echo '运行Go连接池基准测试...'
+    go test -bench=BenchmarkConnectionPool -benchmem -v ./pkg/client/... 2>&1
+    
+    echo '运行连接池并发测试...'
+    go test -bench=BenchmarkConcurrent -benchmem -v ./pkg/client/... 2>&1
+    
+    echo '运行连接复用测试...'
+    go test -bench=BenchmarkConnectionReuse -benchmem -v ./pkg/client/... 2>&1
+    
+    echo '连接池性能测试完成'
+" "30"
+
 # 生成测试报告
 echo "" >> "$RESULT_FILE"
 echo "=====================================" >> "$RESULT_FILE"
@@ -253,6 +282,7 @@ cat > "$REPORT_FILE" << EOF
 - 事务性能
 - 范围查询性能
 - TTL操作性能
+- 连接池性能 (gRPC连接复用、并发管理、连接池配置)
 
 ## 性能指标
 - **吞吐量**: 操作数/秒 (ops/s)

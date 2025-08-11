@@ -115,7 +115,7 @@ bash "$START_SCRIPT"
 sleep 3
 
 # 检查服务器状态
-for port in 8000 8001 8002; do
+for port in 9000 9001 9002; do
     if ! lsof -i :$port > /dev/null 2>&1; then
         echo -e "${RED}✗ 端口 $port 服务器启动失败${NC}"
         exit 1

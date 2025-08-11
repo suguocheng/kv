@@ -213,6 +213,8 @@ cat > "$FINAL_REPORT_FILE" << EOF
 - **报告**: $([ -f "$BENCHMARK_REPORT" ] && echo "$BENCHMARK_REPORT" || echo "无")
 - **说明**: 测试系统性能，最耗时但重要
 
+
+
 ## 测试覆盖范围 (按测试金字塔顺序)
 
 ### 1. 单元测试覆盖 (第1阶段 - 最基础)
@@ -270,6 +272,7 @@ cat > "$FINAL_REPORT_FILE" << EOF
 - TTL操作性能
 - 内存使用性能
 - 网络延迟性能
+- 连接池性能 (gRPC连接复用、并发管理、连接池配置)
 - 混合负载性能
 
 ## 系统信息

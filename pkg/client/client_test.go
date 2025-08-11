@@ -9,7 +9,7 @@ import (
 )
 
 func TestClientCreation(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	client := NewClient(servers)
 
 	if client == nil {
@@ -23,10 +23,15 @@ func TestClientCreation(t *testing.T) {
 	if client.leader != 0 {
 		t.Errorf("Expected initial leader to be 0, got %d", client.leader)
 	}
+
+	// 测试连接池是否创建
+	if client.pool == nil {
+		t.Error("Expected connection pool to be created")
+	}
 }
 
 func TestClientPut(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	_ = context.Background()
@@ -43,7 +48,7 @@ func TestClientPut(t *testing.T) {
 }
 
 func TestClientGet(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	_ = context.Background()
@@ -54,7 +59,7 @@ func TestClientGet(t *testing.T) {
 }
 
 func TestClientDelete(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	_ = context.Background()
@@ -65,7 +70,7 @@ func TestClientDelete(t *testing.T) {
 }
 
 func TestClientPutWithTTL(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	_ = context.Background()
@@ -78,7 +83,7 @@ func TestClientPutWithTTL(t *testing.T) {
 }
 
 func TestClientGetWithRevision(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	_ = "test_key"
@@ -89,7 +94,7 @@ func TestClientGetWithRevision(t *testing.T) {
 }
 
 func TestClientGetHistory(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	_ = "test_key"
@@ -100,7 +105,7 @@ func TestClientGetHistory(t *testing.T) {
 }
 
 func TestClientRange(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	_ = "a"
@@ -113,7 +118,7 @@ func TestClientRange(t *testing.T) {
 }
 
 func TestClientCompact(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	_ = int64(10)
@@ -123,7 +128,7 @@ func TestClientCompact(t *testing.T) {
 }
 
 func TestClientGetStats(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	// 测试客户端方法调用
@@ -131,7 +136,7 @@ func TestClientGetStats(t *testing.T) {
 }
 
 func TestClientTxn(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	// 创建事务请求
@@ -165,7 +170,7 @@ func TestClientTxn(t *testing.T) {
 }
 
 func TestClientWatchKeyWithID(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	_ = "test_key"
@@ -176,7 +181,7 @@ func TestClientWatchKeyWithID(t *testing.T) {
 }
 
 func TestClientWatchPrefixWithID(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	_ = "user:"
@@ -187,7 +192,7 @@ func TestClientWatchPrefixWithID(t *testing.T) {
 }
 
 func TestClientUnwatch(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	_ = "test_watcher"
@@ -197,7 +202,7 @@ func TestClientUnwatch(t *testing.T) {
 }
 
 func TestClientGetWatchList(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	// 测试客户端方法调用
@@ -283,7 +288,7 @@ func TestClientErrorHandling(t *testing.T) {
 }
 
 func TestClientLeaderFailover(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	// 测试leader切换逻辑
@@ -292,7 +297,7 @@ func TestClientLeaderFailover(t *testing.T) {
 }
 
 func TestClientRetryLogic(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	// 测试重试逻辑
@@ -301,7 +306,7 @@ func TestClientRetryLogic(t *testing.T) {
 }
 
 func TestClientConcurrentRequests(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	// 测试并发请求
@@ -310,7 +315,7 @@ func TestClientConcurrentRequests(t *testing.T) {
 }
 
 func TestClientContextCancellation(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	// 测试上下文取消
@@ -322,7 +327,7 @@ func TestClientContextCancellation(t *testing.T) {
 }
 
 func TestClientTimeoutHandling(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	// 测试超时处理
@@ -334,7 +339,7 @@ func TestClientTimeoutHandling(t *testing.T) {
 }
 
 func TestClientLoadBalancing(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	// 测试负载均衡
@@ -343,16 +348,42 @@ func TestClientLoadBalancing(t *testing.T) {
 }
 
 func TestClientConnectionPooling(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
-	_ = NewClient(servers)
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
+	client := NewClient(servers)
+	defer client.Close()
 
-	// 测试连接池
-	// 在实际测试中，需要验证连接复用
-	t.Log("Client connection pooling test - requires running cluster for full test")
+	// 测试连接池是否创建
+	if client.pool == nil {
+		t.Fatal("Expected connection pool to be created")
+	}
+
+	// 测试连接池统计信息
+	stats := client.GetPoolStats()
+	if stats == nil {
+		t.Error("Expected pool stats to be available")
+	} else {
+		t.Logf("Pool stats: %+v", stats)
+	}
+
+	// 测试连接池配置
+	poolConfig := &PoolConfig{
+		MaxConnectionsPerHost: 5,
+		MinConnectionsPerHost: 1,
+		DialTimeout:           1 * time.Second,
+	}
+
+	customClient := NewClientWithPool(servers, poolConfig)
+	defer customClient.Close()
+
+	if customClient.pool == nil {
+		t.Error("Expected custom connection pool to be created")
+	}
+
+	t.Log("Client connection pooling test completed")
 }
 
 func TestClientMetrics(t *testing.T) {
-	servers := []string{"localhost:8000", "localhost:8001", "localhost:8002"}
+	servers := []string{"localhost:9000", "localhost:9001", "localhost:9002"}
 	_ = NewClient(servers)
 
 	// 测试指标收集

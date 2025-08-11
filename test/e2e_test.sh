@@ -140,9 +140,9 @@ wait_for_server() {
     print_info "等待服务器就绪..."
     
     while [ $attempt -le $max_attempts ]; do
-        if lsof -i :8000 > /dev/null 2>&1 && \
-           lsof -i :8001 > /dev/null 2>&1 && \
-           lsof -i :8002 > /dev/null 2>&1; then
+        if lsof -i :9000 > /dev/null 2>&1 && \
+           lsof -i :9001 > /dev/null 2>&1 && \
+           lsof -i :9002 > /dev/null 2>&1; then
             print_success "所有服务器已启动"
             
             # 等待leader选举完成
