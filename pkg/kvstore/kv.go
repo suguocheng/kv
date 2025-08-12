@@ -635,3 +635,54 @@ func (kv *KV) ApplyTxnProto(req *kvpb.TxnRequest) error {
 	_, err := kv.Txn(req)
 	return err
 }
+
+// BatchPut 批量Put操作，减少锁竞争
+func (kv *KV) BatchPut(operations []*kvpb.PutRequest) ([]*kvpb.PutResponse, error) {
+	kv.mu.Lock()
+	defer kv.mu.Unlock()
+
+	responses := make([]*kvpb.PutResponse, len(operations))
+
+	// 批量处理所有操作
+	for i, op := range operations {
+		revision, err := kv.store.Put(op.Key, op.Value, 0) // TTL默认为0
+		if err != nil {
+			responses[i] = &kvpb.PutResponse{Error: err.Error()}
+		} else {
+			// 通知Watch监听器
+			kv.watcher.Notify(&watch.Event{
+				Type:      watch.EventPut,
+				Key:       op.Key,
+				Value:     op.Value,
+				Revision:  revision,
+				Timestamp: time.Now(),
+				TTL:       0,
+			})
+			responses[i] = &kvpb.PutResponse{Revision: revision}
+		}
+	}
+
+	return responses, nil
+}
+
+// BatchGet 批量Get操作
+func (kv *KV) BatchGet(keys []string) ([]*kvpb.GetResponse, error) {
+	kv.mu.RLock()
+	defer kv.mu.RUnlock()
+
+	responses := make([]*kvpb.GetResponse, len(keys))
+
+	for i, key := range keys {
+		versionedKV, err := kv.store.Get(key, 0)
+		if err != nil {
+			responses[i] = &kvpb.GetResponse{Error: err.Error()}
+		} else {
+			responses[i] = &kvpb.GetResponse{
+				Value:  versionedKV.Value,
+				Exists: true,
+			}
+		}
+	}
+
+	return responses, nil
+}

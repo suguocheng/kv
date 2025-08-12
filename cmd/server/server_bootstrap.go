@@ -39,11 +39,7 @@ func parseNodeID() int {
 
 func loadNodeConfig(me int) *NodeConfig {
 	// 加载配置文件
-	cfg, err := config.LoadConfig("config.env")
-	if err != nil {
-		log.DPrintf("Failed to load config: %v", err)
-		panic(fmt.Sprintf("Failed to load config: %v", err))
-	}
+	cfg := config.LoadConfig()
 
 	// 获取节点特定的配置
 	serverConfig := cfg.GetServerConfig(me)

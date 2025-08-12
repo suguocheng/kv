@@ -3,9 +3,8 @@ package config
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strconv"
-	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -14,6 +13,17 @@ import (
 type Config struct {
 	Server ServerConfig
 	Client ClientConfig
+
+	// 新增配置项
+	ServerPorts           []int
+	MaxWALEntries         int
+	SnapshotInterval      int
+	ClientTimeout         time.Duration
+	ClientRetryAttempts   int
+	LogLevel              string
+	LogFile               string
+	MaxConcurrentRequests int
+	RequestTimeout        time.Duration
 }
 
 // ServerConfig 服务器配置
@@ -38,83 +48,73 @@ type ClientConfig struct {
 	HistoryFile string
 }
 
-// LoadConfig 加载配置文件
-func LoadConfig(configPath string) (*Config, error) {
-	// 如果配置文件存在，则加载它
-	if _, err := os.Stat(configPath); err == nil {
-		if err := godotenv.Load(configPath); err != nil {
-			return nil, fmt.Errorf("failed to load config file: %v", err)
-		}
+// LoadConfig 加载配置
+func LoadConfig() *Config {
+	// 加载.env文件
+	godotenv.Load("config.env")
+
+	return &Config{
+		ServerPorts:           getEnvAsSlice("SERVER_PORT_", []string{"9000", "9001", "9002"}),
+		MaxWALEntries:         getEnvAsInt("SERVER_MAX_WAL_ENTRIES", 500),   // 减少默认值
+		SnapshotInterval:      getEnvAsInt("SERVER_SNAPSHOT_INTERVAL", 500), // 减少默认值
+		ClientTimeout:         getEnvAsDuration("CLIENT_TIMEOUT", 5*time.Second),
+		ClientRetryAttempts:   getEnvAsInt("CLIENT_RETRY_ATTEMPTS", 3),
+		LogLevel:              getEnv("LOG_LEVEL", "INFO"),
+		LogFile:               getEnv("LOG_FILE", "log/kv.log"),
+		MaxConcurrentRequests: getEnvAsInt("MAX_CONCURRENT_REQUESTS", 1000),
+		RequestTimeout:        getEnvAsDuration("REQUEST_TIMEOUT", 30*time.Second),
 	}
-
-	config := &Config{}
-
-	// 加载服务器配置
-	config.Server = ServerConfig{
-		NodeID:           getEnvInt("SERVER_NODE_ID", 0),
-		ClientPortBase:   getEnvInt("SERVER_CLIENT_PORT_BASE", 9000),
-		PeerPortBase:     getEnvInt("SERVER_PEER_PORT_BASE", 8000),
-		NodeCount:        getEnvInt("SERVER_NODE_COUNT", 3),
-		Host:             getEnvString("SERVER_HOST", "localhost"),
-		MaxWALEntries:    getEnvInt("SERVER_MAX_WAL_ENTRIES", 1000),
-		SnapshotInterval: getEnvInt("SERVER_SNAPSHOT_INTERVAL", 1000),
-		DataBasePath:     getEnvString("SERVER_DATA_BASE_PATH", "data"),
-		WALSubdir:        getEnvString("SERVER_WAL_SUBDIR", "wal"),
-		RaftStateFile:    getEnvString("SERVER_RAFT_STATE_FILE", "raft-state.pb"),
-		SnapshotFile:     getEnvString("SERVER_SNAPSHOT_FILE", "snapshot.pb"),
-	}
-
-	// 加载客户端配置
-	serversStr := getEnvString("CLIENT_SERVERS", "127.0.0.1:9000,127.0.0.1:9001,127.0.0.1:9002")
-	config.Client = ClientConfig{
-		Servers:     strings.Split(serversStr, ","),
-		HistoryDir:  getEnvString("CLIENT_HISTORY_DIR", "history"),
-		HistoryFile: getEnvString("CLIENT_HISTORY_FILE", "kvcli_history"),
-	}
-
-	return config, nil
 }
 
 // GetServerConfig 获取服务器配置
 func (c *Config) GetServerConfig(nodeID int) *ServerConfig {
-	// 创建节点特定的配置副本
-	serverConfig := c.Server
-	serverConfig.NodeID = nodeID
-	return &serverConfig
+	return &ServerConfig{
+		NodeID:           nodeID,
+		ClientPortBase:   9000,
+		PeerPortBase:     8000,
+		NodeCount:        3,
+		Host:             "localhost",
+		MaxWALEntries:    c.MaxWALEntries,
+		SnapshotInterval: c.SnapshotInterval,
+		DataBasePath:     "data",
+		WALSubdir:        "wal",
+		RaftStateFile:    "raft-state.pb",
+		SnapshotFile:     "snapshot.pb",
+	}
 }
 
 // GetPeerAddrs 获取所有节点的地址映射
 func (c *Config) GetPeerAddrs() map[int]string {
 	peerAddrs := make(map[int]string)
-	for i := 0; i < c.Server.NodeCount; i++ {
-		peerAddrs[i] = fmt.Sprintf("%s:%d", c.Server.Host, c.Server.PeerPortBase+i)
+	for i := 0; i < 3; i++ {
+		peerAddrs[i] = fmt.Sprintf("localhost:%d", 8000+i)
 	}
 	return peerAddrs
 }
 
 // GetClientAddr 获取指定节点的客户端地址
 func (c *Config) GetClientAddr(nodeID int) string {
-	return fmt.Sprintf("%s:%d", c.Server.Host, c.Server.ClientPortBase+nodeID)
+	return fmt.Sprintf("localhost:%d", 9000+nodeID)
 }
 
 // GetDataPath 获取指定节点的数据路径
 func (c *Config) GetDataPath(nodeID int) string {
-	return filepath.Join(c.Server.DataBasePath, fmt.Sprintf("node%d", nodeID))
+	return fmt.Sprintf("data/node%d", nodeID)
 }
 
 // GetWALDir 获取指定节点的WAL目录
 func (c *Config) GetWALDir(nodeID int) string {
-	return filepath.Join(c.GetDataPath(nodeID), c.Server.WALSubdir)
+	return fmt.Sprintf("data/node%d/wal", nodeID)
 }
 
 // GetRaftStatePath 获取指定节点的Raft状态文件路径
 func (c *Config) GetRaftStatePath(nodeID int) string {
-	return filepath.Join(c.GetDataPath(nodeID), c.Server.RaftStateFile)
+	return fmt.Sprintf("data/node%d/raft-state.pb", nodeID)
 }
 
 // GetSnapshotPath 获取指定节点的快照文件路径
 func (c *Config) GetSnapshotPath(nodeID int) string {
-	return filepath.Join(c.GetDataPath(nodeID), c.Server.SnapshotFile)
+	return fmt.Sprintf("data/node%d/snapshot.pb", nodeID)
 }
 
 // 辅助函数
@@ -130,6 +130,52 @@ func getEnvInt(key string, defaultValue int) int {
 		if intValue, err := strconv.Atoi(value); err == nil {
 			return intValue
 		}
+	}
+	return defaultValue
+}
+
+func getEnvAsSlice(prefix string, defaultValue []string) []int {
+	var result []int
+	for i := 0; i < len(defaultValue); i++ {
+		key := fmt.Sprintf("%s%d", prefix, i)
+		if value := os.Getenv(key); value != "" {
+			if intValue, err := strconv.Atoi(value); err == nil {
+				result = append(result, intValue)
+			}
+		}
+	}
+	if len(result) == 0 {
+		// 转换默认值为int切片
+		for _, s := range defaultValue {
+			if intValue, err := strconv.Atoi(s); err == nil {
+				result = append(result, intValue)
+			}
+		}
+	}
+	return result
+}
+
+func getEnvAsInt(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if intValue, err := strconv.Atoi(value); err == nil {
+			return intValue
+		}
+	}
+	return defaultValue
+}
+
+func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
+	if value := os.Getenv(key); value != "" {
+		if duration, err := time.ParseDuration(value); err == nil {
+			return duration
+		}
+	}
+	return defaultValue
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
 	}
 	return defaultValue
 }

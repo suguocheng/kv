@@ -6,75 +6,50 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	// 创建临时配置文件
-	content := `
-# 服务器配置
-NODES=3
-CLIENT_PORT_BASE=8000
-PEER_PORT_BASE=9000
+	// 保存原始环境变量
+	originalMaxWAL := os.Getenv("SERVER_MAX_WAL_ENTRIES")
+	originalSnapshot := os.Getenv("SERVER_SNAPSHOT_INTERVAL")
+	originalPort0 := os.Getenv("SERVER_PORT_0")
+	originalPort1 := os.Getenv("SERVER_PORT_1")
+	originalPort2 := os.Getenv("SERVER_PORT_2")
 
-# 节点配置
-NODE0_CLIENT_ADDR=localhost:8000
-NODE0_PEER_ADDR=localhost:9000
-NODE0_DATA_DIR=data/node0
+	// 设置测试环境变量
+	os.Setenv("SERVER_MAX_WAL_ENTRIES", "1000")
+	os.Setenv("SERVER_SNAPSHOT_INTERVAL", "100")
+	os.Setenv("SERVER_PORT_0", "8000")
+	os.Setenv("SERVER_PORT_1", "8001")
+	os.Setenv("SERVER_PORT_2", "8002")
 
-NODE1_CLIENT_ADDR=localhost:8001
-NODE1_PEER_ADDR=localhost:9001
-NODE1_DATA_DIR=data/node1
-
-NODE2_CLIENT_ADDR=localhost:8002
-NODE2_PEER_ADDR=localhost:9002
-NODE2_DATA_DIR=data/node2
-
-# 客户端配置
-CLIENT_SERVERS=localhost:8000,localhost:8001,localhost:8002
-CLIENT_HISTORY_DIR=history
-CLIENT_HISTORY_FILE=kvcli_history
-
-# 服务器配置
-SERVER_MAX_WAL_ENTRIES=1000
-SERVER_SNAPSHOT_INTERVAL=100
-`
-
-	tmpfile, err := os.CreateTemp("", "config_test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.Remove(tmpfile.Name())
-
-	if _, err := tmpfile.Write([]byte(content)); err != nil {
-		t.Fatal(err)
-	}
-	if err := tmpfile.Close(); err != nil {
-		t.Fatal(err)
-	}
+	// 恢复原始环境变量
+	defer func() {
+		os.Setenv("SERVER_MAX_WAL_ENTRIES", originalMaxWAL)
+		os.Setenv("SERVER_SNAPSHOT_INTERVAL", originalSnapshot)
+		os.Setenv("SERVER_PORT_0", originalPort0)
+		os.Setenv("SERVER_PORT_1", originalPort1)
+		os.Setenv("SERVER_PORT_2", originalPort2)
+	}()
 
 	// 测试加载配置
-	cfg, err := LoadConfig(tmpfile.Name())
-	if err != nil {
-		t.Fatalf("LoadConfig failed: %v", err)
-	}
+	cfg := LoadConfig()
 
 	// 验证配置
-	if cfg.Server.NodeCount != 3 {
-		t.Errorf("Expected NodeCount=3, got %d", cfg.Server.NodeCount)
+	if cfg.MaxWALEntries != 1000 {
+		t.Errorf("Expected MaxWALEntries=1000, got %d", cfg.MaxWALEntries)
 	}
 
-	if cfg.Server.ClientPortBase != 9000 {
-		t.Errorf("Expected ClientPortBase=9000, got %d", cfg.Server.ClientPortBase)
+	if cfg.SnapshotInterval != 100 {
+		t.Errorf("Expected SnapshotInterval=100, got %d", cfg.SnapshotInterval)
 	}
 
-	if len(cfg.Client.Servers) != 3 {
-		t.Errorf("Expected 3 client servers, got %d", len(cfg.Client.Servers))
+	if len(cfg.ServerPorts) != 3 {
+		t.Errorf("Expected 3 server ports, got %d", len(cfg.ServerPorts))
 	}
 }
 
 func TestGetServerConfig(t *testing.T) {
 	cfg := &Config{
-		Server: ServerConfig{
-			MaxWALEntries:    1000,
-			SnapshotInterval: 100,
-		},
+		MaxWALEntries:    1000,
+		SnapshotInterval: 100,
 	}
 
 	serverCfg := cfg.GetServerConfig(0)
@@ -88,34 +63,23 @@ func TestGetServerConfig(t *testing.T) {
 }
 
 func TestGetClientAddr(t *testing.T) {
-	cfg := &Config{
-		Server: ServerConfig{
-			Host:           "localhost",
-			ClientPortBase: 8000,
-		},
-	}
+	cfg := &Config{}
 
 	addr := cfg.GetClientAddr(0)
-	expected := "localhost:8000"
+	expected := "localhost:9000"
 	if addr != expected {
 		t.Errorf("Expected %s, got %s", expected, addr)
 	}
 
 	addr = cfg.GetClientAddr(1)
-	expected = "localhost:8001"
+	expected = "localhost:9001"
 	if addr != expected {
 		t.Errorf("Expected %s, got %s", expected, addr)
 	}
 }
 
 func TestGetPeerAddrs(t *testing.T) {
-	cfg := &Config{
-		Server: ServerConfig{
-			NodeCount:    3,
-			Host:         "localhost",
-			PeerPortBase: 9000,
-		},
-	}
+	cfg := &Config{}
 
 	addrs := cfg.GetPeerAddrs()
 	if len(addrs) != 3 {
@@ -123,9 +87,9 @@ func TestGetPeerAddrs(t *testing.T) {
 	}
 
 	expected := map[int]string{
-		0: "localhost:9000",
-		1: "localhost:9001",
-		2: "localhost:9002",
+		0: "localhost:8000",
+		1: "localhost:8001",
+		2: "localhost:8002",
 	}
 
 	for i, expectedAddr := range expected {
@@ -136,13 +100,7 @@ func TestGetPeerAddrs(t *testing.T) {
 }
 
 func TestGetWALDir(t *testing.T) {
-	cfg := &Config{
-		Server: ServerConfig{
-			NodeCount:    3,
-			DataBasePath: "data",
-			WALSubdir:    "wal",
-		},
-	}
+	cfg := &Config{}
 
 	walDir := cfg.GetWALDir(0)
 	expected := "data/node0/wal"
@@ -158,13 +116,7 @@ func TestGetWALDir(t *testing.T) {
 }
 
 func TestGetRaftStatePath(t *testing.T) {
-	cfg := &Config{
-		Server: ServerConfig{
-			NodeCount:     3,
-			DataBasePath:  "data",
-			RaftStateFile: "raft-state.pb",
-		},
-	}
+	cfg := &Config{}
 
 	path := cfg.GetRaftStatePath(0)
 	expected := "data/node0/raft-state.pb"
@@ -174,13 +126,7 @@ func TestGetRaftStatePath(t *testing.T) {
 }
 
 func TestGetSnapshotPath(t *testing.T) {
-	cfg := &Config{
-		Server: ServerConfig{
-			NodeCount:    3,
-			DataBasePath: "data",
-			SnapshotFile: "snapshot.pb",
-		},
-	}
+	cfg := &Config{}
 
 	path := cfg.GetSnapshotPath(0)
 	expected := "data/node0/snapshot.pb"

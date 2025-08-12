@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"kv/pkg/client"
-	"kv/pkg/config"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,14 +12,14 @@ import (
 )
 
 func main() {
-	// 加载配置文件
-	cfg, err := config.LoadConfig("config.env")
-	if err != nil {
-		fmt.Printf("Failed to load config: %v\n", err)
-		panic(fmt.Sprintf("Failed to load config: %v", err))
+	// 构建服务器地址列表
+	servers := []string{
+		"localhost:9000",
+		"localhost:9001",
+		"localhost:9002",
 	}
 
-	cli := client.NewClient(cfg.Client.Servers)
+	cli := client.NewClient(servers)
 
 	// 初始化 liner
 	line := liner.NewLiner()
@@ -29,9 +28,9 @@ func main() {
 
 	// 历史命令文件存放在项目根目录/history/kvcli_history
 	cwd, _ := os.Getwd()
-	historyDirPath := filepath.Join(cwd, cfg.Client.HistoryDir)
+	historyDirPath := filepath.Join(cwd, "history")
 	_ = os.MkdirAll(historyDirPath, 0755)
-	historyPath := filepath.Join(historyDirPath, cfg.Client.HistoryFile)
+	historyPath := filepath.Join(historyDirPath, "kvcli_history")
 
 	// 加载历史命令
 	if f, err := os.Open(historyPath); err == nil {

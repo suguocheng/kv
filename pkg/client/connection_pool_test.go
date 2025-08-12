@@ -167,23 +167,23 @@ func TestConnectionPoolReuse(t *testing.T) {
 func TestConnectionPoolConfig(t *testing.T) {
 	// 测试默认配置
 	defaultConfig := DefaultPoolConfig()
-	if defaultConfig.MaxConnectionsPerHost != 10 {
-		t.Errorf("Expected MaxConnectionsPerHost to be 10, got %d", defaultConfig.MaxConnectionsPerHost)
+	if defaultConfig.MaxConnectionsPerHost != 20 {
+		t.Errorf("Expected MaxConnectionsPerHost to be 20, got %d", defaultConfig.MaxConnectionsPerHost)
 	}
-	if defaultConfig.MinConnectionsPerHost != 2 {
-		t.Errorf("Expected MinConnectionsPerHost to be 2, got %d", defaultConfig.MinConnectionsPerHost)
+	if defaultConfig.MinConnectionsPerHost != 5 {
+		t.Errorf("Expected MinConnectionsPerHost to be 5, got %d", defaultConfig.MinConnectionsPerHost)
 	}
 
 	// 测试测试配置
 	testConfig := TestPoolConfig()
-	if testConfig.MaxConnectionsPerHost != 5 {
-		t.Errorf("Expected MaxConnectionsPerHost to be 5, got %d", testConfig.MaxConnectionsPerHost)
+	if testConfig.MaxConnectionsPerHost != 10 {
+		t.Errorf("Expected MaxConnectionsPerHost to be 10, got %d", testConfig.MaxConnectionsPerHost)
 	}
 	if testConfig.MinConnectionsPerHost != 0 {
 		t.Errorf("Expected MinConnectionsPerHost to be 0, got %d", testConfig.MinConnectionsPerHost)
 	}
-	if testConfig.DialTimeout != 100*time.Millisecond {
-		t.Errorf("Expected DialTimeout to be 100ms, got %v", testConfig.DialTimeout)
+	if testConfig.DialTimeout != 50*time.Millisecond {
+		t.Errorf("Expected DialTimeout to be 50ms, got %v", testConfig.DialTimeout)
 	}
 
 	// 测试自定义配置 - 使用测试友好的配置

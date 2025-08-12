@@ -35,26 +35,26 @@ type PoolConfig struct {
 // DefaultPoolConfig 默认连接池配置
 func DefaultPoolConfig() *PoolConfig {
 	return &PoolConfig{
-		MaxConnectionsPerHost: 10,
-		MinConnectionsPerHost: 2,
-		MaxIdleTime:           30 * time.Minute,
-		MaxLifetime:           1 * time.Hour,
-		DialTimeout:           1 * time.Second, // 减少超时时间，避免测试时等待太久
-		KeepAliveTime:         30 * time.Second,
-		KeepAliveTimeout:      5 * time.Second,
+		MaxConnectionsPerHost: 20,                     // 增加最大连接数
+		MinConnectionsPerHost: 5,                      // 增加最小连接数
+		MaxIdleTime:           10 * time.Minute,       // 减少空闲时间
+		MaxLifetime:           30 * time.Minute,       // 减少生命周期
+		DialTimeout:           500 * time.Millisecond, // 减少超时时间
+		KeepAliveTime:         10 * time.Second,       // 减少保活时间
+		KeepAliveTimeout:      2 * time.Second,        // 减少保活超时
 	}
 }
 
 // TestPoolConfig 测试环境连接池配置
 func TestPoolConfig() *PoolConfig {
 	return &PoolConfig{
-		MaxConnectionsPerHost: 5,
-		MinConnectionsPerHost: 0, // 测试时不预创建连接
-		MaxIdleTime:           5 * time.Minute,
-		MaxLifetime:           10 * time.Minute,
-		DialTimeout:           100 * time.Millisecond, // 更短的超时时间
-		KeepAliveTime:         10 * time.Second,
-		KeepAliveTimeout:      2 * time.Second,
+		MaxConnectionsPerHost: 10,                    // 增加测试环境连接数
+		MinConnectionsPerHost: 0,                     // 测试时不预创建连接
+		MaxIdleTime:           2 * time.Minute,       // 减少空闲时间
+		MaxLifetime:           5 * time.Minute,       // 减少生命周期
+		DialTimeout:           50 * time.Millisecond, // 更短的超时时间
+		KeepAliveTime:         5 * time.Second,       // 减少保活时间
+		KeepAliveTimeout:      1 * time.Second,       // 减少保活超时
 	}
 }
 
