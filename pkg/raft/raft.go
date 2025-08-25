@@ -140,7 +140,7 @@ func (rf *Raft) replicator(peer int) {
 		}
 		// send log entries to peer
 		rf.broadcastAppendEntries(peer)
-		time.Sleep(time.Duration(100) * time.Millisecond) //大量输出日志所以需要sleep
+		// time.Sleep(time.Duration(100) * time.Millisecond) //大量输出日志所以需要sleep
 	}
 }
 
@@ -511,7 +511,7 @@ func (rf *Raft) WaitForIndex(index int, timeout time.Duration) bool {
 			return true
 		}
 		rf.mu.RUnlock()
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(1 * time.Millisecond)
 	}
 	return false
 }

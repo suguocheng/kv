@@ -158,7 +158,6 @@ func (kv *KV) RestoreFromSnapshotData(snapshot []byte) error {
 
 // Put/PutWithTTL/Delete等方法只做业务apply，不再写WAL
 func (kv *KV) Put(key, value string) error {
-	fmt.Printf("[KV] Put: key=%s value=%s\n", key, value)
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
 	revision, err := kv.store.Put(key, value, 0)
@@ -170,7 +169,6 @@ func (kv *KV) Put(key, value string) error {
 }
 
 func (kv *KV) PutWithTTL(key, value string, ttl int64) error {
-	fmt.Printf("[KV] PutWithTTL: key=%s value=%s ttl=%d\n", key, value, ttl)
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
 	revision, err := kv.store.Put(key, value, ttl)

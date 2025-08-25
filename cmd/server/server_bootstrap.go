@@ -74,7 +74,7 @@ func initKV(walDir string, maxEntries int) *kvstore.KV {
 }
 
 func initRaft(conf *NodeConfig, kv *kvstore.KV) (*raft.Raft, chan raft.ApplyMsg) {
-	applyCh := make(chan raft.ApplyMsg)
+	applyCh := make(chan raft.ApplyMsg, 1024)
 	wm := kv.GetWALManager()
 	rf := raft.Make(conf.Me, conf.PeerAddrs, conf.ClientAddr, applyCh, conf.RaftStatePath, conf.SnapshotPath, wm)
 

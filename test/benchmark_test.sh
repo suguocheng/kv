@@ -23,6 +23,12 @@ kv_client() {
     cd "$PROJECT_ROOT" && $CLIENT_CMD
 }
 
+# 运行一批命令（单次会话）
+kv_client_batch() {
+    local commands="$1"
+    cd "$PROJECT_ROOT" && echo -e "$commands" | $CLIENT_CMD > /dev/null 2>&1
+}
+
 # 测试输出目录
 TEST_DIR="$PROJECT_ROOT/test"
 RESULTS_DIR="$TEST_DIR/results"
@@ -72,7 +78,10 @@ monitor_system_resources() {
     local mem_info=$(free -m | grep Mem)
     local mem_total=$(echo $mem_info | awk '{print $2}')
     local mem_used=$(echo $mem_info | awk '{print $3}')
-    local mem_usage=$(echo "scale=1; $mem_used * 100 / $mem_total" | bc -l)
+    local mem_usage="0.0"
+    if [ -n "$mem_total" ] && [ "$mem_total" -gt 0 ] 2>/dev/null; then
+        mem_usage=$(echo "scale=1; $mem_used * 100 / $mem_total" | bc -l 2>/dev/null)
+    fi
     echo "内存使用: ${mem_used}MB/${mem_total}MB (${mem_usage}%)" >> "$LOG_FILE"
     
     # 磁盘I/O (兼容不同系统)
@@ -150,7 +159,11 @@ run_benchmark() {
             
             # 重新定义kv_client函数
             kv_client() {
-                cd \"\$PROJECT_ROOT\" && \$CLIENT_CMD
+                cd \"$PROJECT_ROOT\" && $CLIENT_CMD
+            }
+            kv_client_batch() {
+                local commands=\"$1\"
+                cd \"$PROJECT_ROOT\" && echo -e \"$commands\" | $CLIENT_CMD > /dev/null 2>&1
             }
             
             # 执行测试命令
@@ -203,8 +216,8 @@ run_benchmark() {
         local avg_duration=$(echo "${durations[@]}" | tr ' ' '\n' | awk '{sum+=$1} END {print sum/NR}')
         
         # 计算标准差
-        local throughput_std=$(echo "${throughputs[@]}" | tr ' ' '\n' | awk '{sum+=$1; sumsq+=$1*$1} END {print sqrt(sumsq/NR - (sum/NR)**2)}')
-        local latency_std=$(echo "${latencies[@]}" | tr ' ' '\n' | awk '{sum+=$1; sumsq+=$1*$1} END {print sqrt(sumsq/NR - (sum/NR)**2)}')
+        local throughput_std=$(echo "${throughputs[@]}" | tr ' ' '\n' | awk '{sum+=$1; sumsq+=$1*$1} END {m=sum/NR; print sqrt(sumsq/NR - (m*m))}')
+        local latency_std=$(echo "${latencies[@]}" | tr ' ' '\n' | awk '{sum+=$1; sumsq+=$1*$1} END {m=sum/NR; print sqrt(sumsq/NR - (m*m))}')
         
         # 计算百分位数
         local latency_percentiles=$(calculate_percentiles "${latencies[@]}")
@@ -215,8 +228,8 @@ run_benchmark() {
         # 检查结果
         local success=true
         if [ -n "$expected_throughput" ]; then
-            local throughput_ratio=$(echo "scale=2; $avg_throughput / $expected_throughput" | bc -l)
-            if (( $(echo "$throughput_ratio < 0.8" | bc -l) )); then
+            local throughput_ratio=$(echo "scale=2; $avg_throughput / $expected_throughput" | bc -l 2>/dev/null)
+            if (( $(echo "$throughput_ratio < 0.8" | bc -l 2>/dev/null) )); then
                 success=false
             fi
         fi
@@ -274,10 +287,12 @@ run_benchmark "PUT操作性能测试" "
     echo '开始PUT性能测试...'
     start_time=\$(date +%s.%N)
     operations=0
+    cmds=\"\"
     for i in {1..100}; do
-        echo \"PUT bench_put_\$i value_\$i\" | kv_client > /dev/null 2>&1
-        operations=\$((operations + 1))
+        cmds+=\"PUT bench_put_\$i value_\$i\\n\"
     done
+    kv_client_batch \"\$cmds\"
+    operations=100
     end_time=\$(date +%s.%N)
     duration=\$(echo \"\$end_time - \$start_time\" | bc -l)
     throughput=\$(echo \"scale=2; \$operations / \$duration\" | bc -l)
@@ -293,10 +308,12 @@ run_benchmark "GET操作性能测试" "
     echo '开始GET性能测试...'
     start_time=\$(date +%s.%N)
     operations=0
+    cmds=\"\"
     for i in {1..100}; do
-        echo \"GET bench_put_\$i\" | kv_client > /dev/null 2>&1
-        operations=\$((operations + 1))
+        cmds+=\"GET bench_put_\$i\\n\"
     done
+    kv_client_batch \"\$cmds\"
+    operations=100
     end_time=\$(date +%s.%N)
     duration=\$(echo \"\$end_time - \$start_time\" | bc -l)
     throughput=\$(echo \"scale=2; \$operations / \$duration\" | bc -l)
@@ -312,10 +329,12 @@ run_benchmark "事务性能测试" "
     echo '开始事务性能测试...'
     start_time=\$(date +%s.%N)
     operations=0
+    cmds=\"\"
     for i in {1..50}; do
-        echo \"TXN PUT txn_key_\$i value_\$i PUT txn_key2_\$i value2_\$i\" | kv_client > /dev/null 2>&1
-        operations=\$((operations + 1))
+        cmds+=\"TXN PUT txn_key_\$i value_\$i PUT txn_key2_\$i value2_\$i\\n\"
     done
+    kv_client_batch \"\$cmds\"
+    operations=50
     end_time=\$(date +%s.%N)
     duration=\$(echo \"\$end_time - \$start_time\" | bc -l)
     throughput=\$(echo \"scale=2; \$operations / \$duration\" | bc -l)
@@ -331,10 +350,12 @@ run_benchmark "范围查询性能测试" "
     echo '开始范围查询性能测试...'
     start_time=\$(date +%s.%N)
     operations=0
+    cmds=\"\"
     for i in {1..20}; do
-        echo 'RANGE bench_put_1 bench_put_50' | kv_client > /dev/null 2>&1
-        operations=\$((operations + 1))
+        cmds+=\"RANGE bench_put_1 bench_put_50\\n\"
     done
+    kv_client_batch \"\$cmds\"
+    operations=20
     end_time=\$(date +%s.%N)
     duration=\$(echo \"\$end_time - \$start_time\" | bc -l)
     throughput=\$(echo \"scale=2; \$operations / \$duration\" | bc -l)
@@ -350,10 +371,12 @@ run_benchmark "TTL操作性能测试" "
     echo '开始TTL操作性能测试...'
     start_time=\$(date +%s.%N)
     operations=0
+    cmds=\"\"
     for i in {1..50}; do
-        echo \"PUTTTL ttl_bench_\$i value_\$i 60\" | kv_client > /dev/null 2>&1
-        operations=\$((operations + 1))
+        cmds+=\"PUTTTL ttl_bench_\$i value_\$i 60\\n\"
     done
+    kv_client_batch \"\$cmds\"
+    operations=50
     end_time=\$(date +%s.%N)
     duration=\$(echo \"\$end_time - \$start_time\" | bc -l)
     throughput=\$(echo \"scale=2; \$operations / \$duration\" | bc -l)
@@ -367,7 +390,7 @@ run_benchmark "TTL操作性能测试" "
 # 6. 连接池性能测试
 run_benchmark "连接池性能测试" "
     echo '开始连接池性能测试...'
-    cd \"\$PROJECT_ROOT\"
+    cd \"$PROJECT_ROOT\"
     
     # 运行连接池测试
     echo '运行连接池测试...'
@@ -389,12 +412,11 @@ run_benchmark "并发性能测试" "
     operations=0
     
     # 并发执行PUT操作
+    cmds=\"\"
     for i in {1..50}; do
-        (
-            echo \"PUT concurrent_key_\$i value_\$i\" | kv_client > /dev/null 2>&1
-        ) &
+        cmds+=\"PUT concurrent_key_\$i value_\$i\\n\"
     done
-    wait
+    kv_client_batch \"\$cmds\"
     
     operations=50
     end_time=\$(date +%s.%N)
@@ -414,12 +436,14 @@ run_benchmark "大数据量性能测试" "
     operations=0
     
     # 写入大数据量
+    cmds=\"\"
     for i in {1..200}; do
         large_value=\$(printf '%.1000d' \$i)
-        echo \"PUT large_key_\$i \$large_value\" | kv_client > /dev/null 2>&1
-        operations=\$((operations + 1))
+        cmds+=\"PUT large_key_\$i \$large_value\\n\"
     done
+    kv_client_batch \"\$cmds\"
     
+    operations=200
     end_time=\$(date +%s.%N)
     duration=\$(echo \"\$end_time - \$start_time\" | bc -l)
     throughput=\$(echo \"scale=2; \$operations / \$duration\" | bc -l)
@@ -433,7 +457,7 @@ run_benchmark "大数据量性能测试" "
 # 9. WAL性能测试 (新增)
 run_benchmark "WAL性能测试" "
     echo '开始WAL性能测试...'
-    cd \"\$PROJECT_ROOT\"
+    cd \"$PROJECT_ROOT\"
     
     # 运行WAL基准测试并解析结果
     echo '运行WAL基准测试...'
@@ -474,7 +498,7 @@ run_benchmark "WAL性能测试" "
 # 10. SkipList性能测试 (新增)
 run_benchmark "SkipList性能测试" "
     echo '开始SkipList性能测试...'
-    cd \"\$PROJECT_ROOT\"
+    cd \"$PROJECT_ROOT\"
     
     # 运行SkipList基准测试并解析结果
     echo '运行SkipList基准测试...'
