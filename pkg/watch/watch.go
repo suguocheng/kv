@@ -32,12 +32,12 @@ func (e EventType) String() string {
 
 // Event 表示一个键值变化事件
 type Event struct {
-	Type      EventType `json:"type"`
-	Key       string    `json:"key"`
-	Value     string    `json:"value,omitempty"`
-	Revision  int64     `json:"revision"`
-	Timestamp time.Time `json:"timestamp"`
-	TTL       int64     `json:"ttl,omitempty"`
+	Type      EventType
+	Key       string
+	Value     string
+	Revision  int64
+	Timestamp time.Time
+	TTL       int64
 }
 
 // String 返回事件的字符串表示
@@ -48,8 +48,8 @@ func (e *Event) String() string {
 
 // WatchResponse 表示监听响应
 type WatchResponse struct {
-	Events []*Event `json:"events"`
-	Error  error    `json:"error,omitempty"`
+	Events []*Event
+	Error  error
 }
 
 // Watcher 表示一个监听器
@@ -97,22 +97,20 @@ func (w *Watcher) IsClosed() bool {
 
 // WatchManager 管理所有的监听器
 type WatchManager struct {
-	watchers  map[string]*Watcher // 按ID索引
-	keyMap    map[string][]string // 按key索引watcher ID列表
-	prefixMap map[string][]string // 按prefix索引watcher ID列表
-	mu        sync.RWMutex
+	watchers map[string]*Watcher // 按ID索引
+	keyMap   map[string][]string // 按key索引watcher ID列表
+	mu       sync.RWMutex
 }
 
 // NewWatchManager 创建一个新的监听管理器
 func NewWatchManager() *WatchManager {
 	return &WatchManager{
-		watchers:  make(map[string]*Watcher),
-		keyMap:    make(map[string][]string),
-		prefixMap: make(map[string][]string),
+		watchers: make(map[string]*Watcher),
+		keyMap:   make(map[string][]string),
 	}
 }
 
-// Watch 创建一个新的监听器
+// Watch 创建一个新的监听器（仅支持按Key）
 func (wm *WatchManager) Watch(id, key, prefix string) (*Watcher, error) {
 	wm.mu.Lock()
 	defer wm.mu.Unlock()
@@ -122,19 +120,17 @@ func (wm *WatchManager) Watch(id, key, prefix string) (*Watcher, error) {
 		return nil, fmt.Errorf("watcher with ID %s already exists", id)
 	}
 
+	// 仅支持按Key监听，忽略prefix
+	if key == "" {
+		return nil, fmt.Errorf("key must be specified for watch")
+	}
+
 	// 创建新的监听器
-	watcher := NewWatcher(id, key, prefix)
+	watcher := NewWatcher(id, key, "")
 	wm.watchers[id] = watcher
 
 	// 注册到keyMap
-	if key != "" {
-		wm.keyMap[key] = append(wm.keyMap[key], id)
-	}
-
-	// 注册到prefixMap
-	if prefix != "" {
-		wm.prefixMap[prefix] = append(wm.prefixMap[prefix], id)
-	}
+	wm.keyMap[key] = append(wm.keyMap[key], id)
 
 	return watcher, nil
 }
@@ -157,24 +153,16 @@ func (wm *WatchManager) Unwatch(id string) error {
 
 	// 从keyMap中删除
 	if watcher.Key != "" {
-		wm.removeFromSlice(wm.keyMap[watcher.Key], id)
+		wm.keyMap[watcher.Key] = wm.removeFromSlice(wm.keyMap[watcher.Key], id)
 		if len(wm.keyMap[watcher.Key]) == 0 {
 			delete(wm.keyMap, watcher.Key)
-		}
-	}
-
-	// 从prefixMap中删除
-	if watcher.Prefix != "" {
-		wm.removeFromSlice(wm.prefixMap[watcher.Prefix], id)
-		if len(wm.prefixMap[watcher.Prefix]) == 0 {
-			delete(wm.prefixMap, watcher.Prefix)
 		}
 	}
 
 	return nil
 }
 
-// Notify 通知所有相关的监听器
+// Notify 通知所有相关的监听器（仅按Key）
 func (wm *WatchManager) Notify(event *Event) {
 	wm.mu.RLock()
 	defer wm.mu.RUnlock()
@@ -187,21 +175,6 @@ func (wm *WatchManager) Notify(event *Event) {
 				case watcher.Events <- event:
 				default:
 					// 通道已满，跳过这个事件
-				}
-			}
-		}
-	}
-
-	// 通知前缀匹配的监听器
-	for prefix, watcherIDs := range wm.prefixMap {
-		if wm.hasPrefix(event.Key, prefix) {
-			for _, id := range watcherIDs {
-				if watcher, ok := wm.watchers[id]; ok && !watcher.IsClosed() {
-					select {
-					case watcher.Events <- event:
-					default:
-						// 通道已满，跳过这个事件
-					}
 				}
 			}
 		}
@@ -236,7 +209,6 @@ func (wm *WatchManager) GetStats() map[string]interface{} {
 	stats := make(map[string]interface{})
 	stats["total_watchers"] = len(wm.watchers)
 	stats["key_watchers"] = len(wm.keyMap)
-	stats["prefix_watchers"] = len(wm.prefixMap)
 
 	// 统计活跃的监听器数量
 	activeCount := 0
@@ -270,17 +242,9 @@ func (wm *WatchManager) Cleanup() {
 
 		// 从keyMap中删除
 		if watcher.Key != "" {
-			wm.removeFromSlice(wm.keyMap[watcher.Key], id)
+			wm.keyMap[watcher.Key] = wm.removeFromSlice(wm.keyMap[watcher.Key], id)
 			if len(wm.keyMap[watcher.Key]) == 0 {
 				delete(wm.keyMap, watcher.Key)
-			}
-		}
-
-		// 从prefixMap中删除
-		if watcher.Prefix != "" {
-			wm.removeFromSlice(wm.prefixMap[watcher.Prefix], id)
-			if len(wm.prefixMap[watcher.Prefix]) == 0 {
-				delete(wm.prefixMap, watcher.Prefix)
 			}
 		}
 	}
@@ -294,9 +258,4 @@ func (wm *WatchManager) removeFromSlice(slice []string, item string) []string {
 		}
 	}
 	return slice
-}
-
-// hasPrefix 检查字符串是否有指定前缀
-func (wm *WatchManager) hasPrefix(s, prefix string) bool {
-	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
 }

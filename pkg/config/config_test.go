@@ -6,32 +6,20 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	// 创建临时配置文件
+	// 创建临时配置文件（使用与正式配置一致的键名）
 	content := `
-# 服务器配置
-NODES=3
-CLIENT_PORT_BASE=8000
-PEER_PORT_BASE=9000
+# 服务器基础
+SERVER_NODE_COUNT=3
+SERVER_CLIENT_PORT_BASE=9000
+SERVER_PEER_PORT_BASE=8000
+SERVER_HOST=localhost
 
-# 节点配置
-NODE0_CLIENT_ADDR=localhost:8000
-NODE0_PEER_ADDR=localhost:9000
-NODE0_DATA_DIR=data/node0
-
-NODE1_CLIENT_ADDR=localhost:8001
-NODE1_PEER_ADDR=localhost:9001
-NODE1_DATA_DIR=data/node1
-
-NODE2_CLIENT_ADDR=localhost:8002
-NODE2_PEER_ADDR=localhost:9002
-NODE2_DATA_DIR=data/node2
-
-# 客户端配置
-CLIENT_SERVERS=localhost:8000,localhost:8001,localhost:8002
+# 客户端
+CLIENT_SERVERS=localhost:9000,localhost:9001,localhost:9002
 CLIENT_HISTORY_DIR=history
 CLIENT_HISTORY_FILE=kvcli_history
 
-# 服务器配置
+# WAL/快照
 SERVER_MAX_WAL_ENTRIES=1000
 SERVER_SNAPSHOT_INTERVAL=100
 `
@@ -49,13 +37,13 @@ SERVER_SNAPSHOT_INTERVAL=100
 		t.Fatal(err)
 	}
 
-	// 测试加载配置
+	// 加载配置
 	cfg, err := LoadConfig(tmpfile.Name())
 	if err != nil {
 		t.Fatalf("LoadConfig failed: %v", err)
 	}
 
-	// 验证配置
+	// 验证关键字段
 	if cfg.Server.NodeCount != 3 {
 		t.Errorf("Expected NodeCount=3, got %d", cfg.Server.NodeCount)
 	}

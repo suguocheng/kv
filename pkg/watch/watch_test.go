@@ -85,42 +85,6 @@ func TestWatchManagerUnwatch(t *testing.T) {
 	}
 }
 
-func TestWatchManagerPrefixWatch(t *testing.T) {
-	wm := NewWatchManager()
-
-	// 创建前缀监听器
-	watcher, err := wm.Watch("prefix_id", "", "user:")
-	if err != nil {
-		t.Errorf("Prefix watch failed: %v", err)
-	}
-
-	if watcher.Prefix != "user:" {
-		t.Errorf("Expected prefix user:, got %s", watcher.Prefix)
-	}
-
-	// 创建匹配的事件
-	event := &Event{
-		Type:      EventPut,
-		Key:       "user:123",
-		Value:     "test_value",
-		Revision:  1,
-		Timestamp: time.Now(),
-	}
-
-	// 通知事件
-	wm.Notify(event)
-
-	// 检查事件是否被接收
-	select {
-	case receivedEvent := <-watcher.Events:
-		if receivedEvent.Key != event.Key {
-			t.Errorf("Expected key %s, got %s", event.Key, receivedEvent.Key)
-		}
-	case <-time.After(1 * time.Second):
-		t.Error("Timeout waiting for prefix event")
-	}
-}
-
 func TestWatchManagerMultipleWatchers(t *testing.T) {
 	wm := NewWatchManager()
 
@@ -212,25 +176,20 @@ func TestWatchManagerStats(t *testing.T) {
 	// 创建一些监听器
 	wm.Watch("id1", "key1", "")
 	wm.Watch("id2", "key2", "")
-	wm.Watch("id3", "", "prefix:")
 
 	stats := wm.GetStats()
 
 	// 验证统计信息
-	if stats["total_watchers"] != 3 {
-		t.Errorf("Expected 3 total watchers, got %v", stats["total_watchers"])
+	if stats["total_watchers"] != 2 {
+		t.Errorf("Expected 2 total watchers, got %v", stats["total_watchers"])
 	}
 
 	if stats["key_watchers"] != 2 {
 		t.Errorf("Expected 2 key watchers, got %v", stats["key_watchers"])
 	}
 
-	if stats["prefix_watchers"] != 1 {
-		t.Errorf("Expected 1 prefix watcher, got %v", stats["prefix_watchers"])
-	}
-
-	if stats["active_watchers"] != 3 {
-		t.Errorf("Expected 3 active watchers, got %v", stats["active_watchers"])
+	if stats["active_watchers"] != 2 {
+		t.Errorf("Expected 2 active watchers, got %v", stats["active_watchers"])
 	}
 }
 
