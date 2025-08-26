@@ -37,11 +37,6 @@ test-unit:
 	@echo "运行单元测试..."
 	cd test && ./unit_test.sh
 
-# 运行端到端测试
-test-e2e:
-	@echo "运行端到端测试..."
-	cd test && ./e2e_test.sh
-
 # 运行集成测试
 test-integration:
 	@echo "运行集成测试..."
@@ -51,6 +46,11 @@ test-integration:
 test-cluster:
 	@echo "运行集群测试..."
 	cd test && ./cluster_test.sh
+
+# 运行端到端测试
+test-e2e:
+	@echo "运行端到端测试..."
+	cd test && ./e2e_test.sh
 
 # 运行性能基准测试
 test-benchmark:

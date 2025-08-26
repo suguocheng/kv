@@ -15,14 +15,20 @@ if [ ! -f "$CONFIG" ]; then
   exit 1
 fi
 
-mkdir -p log
+mkdir -p log bin
 
-echo "启动 $NODES 个KV服务器(go run)..."
+# 预编译服务端二进制
+if [ ! -x "bin/server" ]; then
+  echo "编译服务端二进制: bin/server"
+  go build -o bin/server ./cmd/server
+fi
+
+echo "启动 $NODES 个KV服务器(bin/server)..."
 
 for ((i=0; i<NODES; i++)); do
   LOGFILE="log/test${i}.log"
-  echo "go run ./cmd/server $i > $LOGFILE 2>&1 &"
-  nohup go run ./cmd/server $i > "$LOGFILE" 2>&1 &
+  echo "bin/server $i > $LOGFILE 2>&1 &"
+  nohup bin/server $i > "$LOGFILE" 2>&1 &
 done
 
 echo "所有节点已启动"

@@ -26,17 +26,13 @@ kv_client() {
 # 测试输出目录
 TEST_DIR="$PROJECT_ROOT/test"
 RESULTS_DIR="$TEST_DIR/results"
-LOGS_DIR="$TEST_DIR/logs"
-REPORTS_DIR="$TEST_DIR/reports"
 
 # 确保目录存在
-mkdir -p "$RESULTS_DIR" "$LOGS_DIR" "$REPORTS_DIR"
+mkdir -p "$RESULTS_DIR"
 
 # 生成带时间戳的文件名
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 RESULT_FILE="$RESULTS_DIR/integration_test_results_$TIMESTAMP.txt"
-LOG_FILE="$LOGS_DIR/integration_test_log_$TIMESTAMP.txt"
-REPORT_FILE="$REPORTS_DIR/integration_test_report_$TIMESTAMP.txt"
 
 # 清理函数
 cleanup() {
@@ -59,7 +55,6 @@ print_header "KV系统集成测试" "测试时间: $(date)"
 
 # 清空结果文件
 > "$RESULT_FILE"
-> "$LOG_FILE"
 
 # 执行测试函数
 run_integration_test() {
@@ -88,13 +83,6 @@ run_integration_test() {
         $test_commands
     " 2>&1)
     local exit_code=$?
-    
-    # 记录到日志文件
-    echo "=== [$TOTAL_TESTS] $test_name ===" >> "$LOG_FILE"
-    echo "命令: $test_commands" >> "$LOG_FILE"
-    echo "输出: $output" >> "$LOG_FILE"
-    echo "退出码: $exit_code" >> "$LOG_FILE"
-    echo "" >> "$LOG_FILE"
     
     # 检查结果
     if [ $exit_code -eq 0 ] && echo "$output" | grep -q "$expected_pattern"; then
@@ -256,55 +244,6 @@ echo "通过: $PASSED_TESTS" >> "$RESULT_FILE"
 echo "失败: $FAILED_TESTS" >> "$RESULT_FILE"
 echo "成功率: $(echo "scale=1; $PASSED_TESTS * 100 / $TOTAL_TESTS" | bc)%" >> "$RESULT_FILE"
 
-# 生成报告文件
-cat > "$REPORT_FILE" << EOF
-# KV系统集成测试报告
-
-## 测试概览
-- **测试时间**: $(date)
-- **测试脚本**: integration_test.sh
-- **总测试数**: $TOTAL_TESTS
-- **通过测试**: $PASSED_TESTS
-- **失败测试**: $FAILED_TESTS
-- **成功率**: $(echo "scale=1; $PASSED_TESTS * 100 / $TOTAL_TESTS" | bc)%
-
-## 测试覆盖范围
-- 基本操作（PUT/GET/DEL）
-- 分布式一致性
-- TTL过期机制
-- 并发客户端
-- 大规模数据处理
-- 事务一致性
-- MVCC版本控制
-- 范围查询
-- 错误处理
-- 数据持久化
-- 性能基准测试
-
-## 文件位置
-- **详细结果**: $RESULT_FILE
-- **详细日志**: $LOG_FILE
-- **测试报告**: $REPORT_FILE
-
-## 快速查看
-EOF
-
-if [ $FAILED_TESTS -gt 0 ]; then
-    echo "" >> "$REPORT_FILE"
-    echo "## 失败的测试" >> "$REPORT_FILE"
-    echo "以下测试失败，详细错误信息请查看日志文件：" >> "$REPORT_FILE"
-    echo "" >> "$REPORT_FILE"
-    grep "FAIL" "$RESULT_FILE" >> "$REPORT_FILE"
-else
-    echo "" >> "$REPORT_FILE"
-    echo "## 测试状态" >> "$REPORT_FILE"
-    echo "✅ 所有集成测试通过！" >> "$REPORT_FILE"
-fi
-
-echo "" >> "$REPORT_FILE"
-echo "---" >> "$REPORT_FILE"
-echo "*报告生成时间: $(date)*" >> "$REPORT_FILE"
-
 # 终端输出
 echo ""
 if [ $FAILED_TESTS -eq 0 ]; then
@@ -312,9 +251,7 @@ if [ $FAILED_TESTS -eq 0 ]; then
 else
     echo -e "${RED}❌ 集成测试完成！$FAILED_TESTS/$TOTAL_TESTS 个测试失败${NC}"
 fi
-echo -e "📊 详细报告: $REPORT_FILE"
 echo -e "📋 详细结果: $RESULT_FILE"
-echo -e "📝 详细日志: $LOG_FILE"
 
 if [ $FAILED_TESTS -eq 0 ]; then
     exit 0

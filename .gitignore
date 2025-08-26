@@ -5,7 +5,6 @@ history/
 log/*
 !log/log.go
 
-test/final_reports/
-test/logs/
-test/reports/
 test/results/
+
+bin/
