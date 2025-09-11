@@ -58,7 +58,7 @@ server:
 # 启动客户端
 client:
 	@echo "启动KV客户端..."
-	go run ./cmd/client/main.go ./cmd/client/handlers.go ./cmd/client/help.go
+	go run ./cmd/client
 
 # 停止服务器
 stop:
