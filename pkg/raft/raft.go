@@ -436,11 +436,12 @@ func (rf *Raft) connectToPeersGRPC() {
 			maxRetries := 10
 			retryCount := 0
 			for retryCount < maxRetries {
-				conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock(), grpc.WithTimeout(2*time.Second))
+				// 使用新的 grpc.NewClient API
+				client, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 				if err == nil {
-					client := raftpb.NewRaftServiceClient(conn)
+					raftClient := raftpb.NewRaftServiceClient(client)
 					rf.mu.Lock()
-					rf.peers[id] = client
+					rf.peers[id] = raftClient
 					rf.mu.Unlock()
 					log.Printf("gRPC连接%d号节点成功", id)
 					return // gRPC 长连接，无需保活循环

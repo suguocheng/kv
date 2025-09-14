@@ -1,7 +1,6 @@
 package client
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -107,17 +106,14 @@ func (p *ConnectionPool) GetClient(addr string) (kvpb.KVServiceClient, error) {
 
 // createConnection 创建新的gRPC连接
 func (p *ConnectionPool) createConnection(addr string) (*grpc.ClientConn, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), p.config.DialTimeout)
-	defer cancel()
-
-	conn, err := grpc.DialContext(ctx, addr,
+	// 使用新的 grpc.NewClient API
+	conn, err := grpc.NewClient(addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:                p.config.KeepAliveTime,
 			Timeout:             p.config.KeepAliveTimeout,
 			PermitWithoutStream: true,
 		}),
-		grpc.WithBlock(),
 	)
 
 	if err != nil {
