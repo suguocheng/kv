@@ -101,7 +101,7 @@ func (rf *Raft) Start(command []byte) (int, int, bool) {
 		rf.matchIndex[rf.me] = index
 		log.DPrintf("Leader %d, Term %d, Appended log: Index=%d, Command=%v", rf.me, rf.currentTerm, index, command)
 
-		go rf.BroadcastHeartbeat(false)
+		go rf.notifyPeersForSync(false)
 	} else {
 		log.DPrintf("Not a leader, returning")
 	}
@@ -109,14 +109,14 @@ func (rf *Raft) Start(command []byte) (int, int, bool) {
 	return index, rf.currentTerm, isLeader
 }
 
-func (rf *Raft) BroadcastHeartbeat(isHeartbeat bool) {
+func (rf *Raft) notifyPeersForSync(isHeartbeat bool) {
 	for peer := range rf.peers {
 		if peer == rf.me {
 			continue
 		}
 		if isHeartbeat {
 			// should send heartbeat to all peers immediately
-			go rf.broadcastAppendEntries(peer)
+			go rf.sendAppendEntriesToPeer(peer)
 		} else {
 			// just need to signal replicator to send log entries to peer
 			rf.replicatorCond[peer].Signal()
@@ -139,12 +139,12 @@ func (rf *Raft) replicator(peer int) {
 			rf.replicatorCond[peer].Wait()
 		}
 		// send log entries to peer
-		rf.broadcastAppendEntries(peer)
+		rf.sendAppendEntriesToPeer(peer)
 		// time.Sleep(time.Duration(100) * time.Millisecond) //大量输出日志所以需要sleep
 	}
 }
 
-func (rf *Raft) broadcastAppendEntries(i int) {
+func (rf *Raft) sendAppendEntriesToPeer(i int) {
 	log.DPrintf("Leader %d broadcasting AppendEntries, Term %d", rf.me, rf.currentTerm)
 	term := rf.currentTerm
 
@@ -343,7 +343,7 @@ func (rf *Raft) ticker() {
 		case <-rf.heartbeatTimer.C:
 			rf.mu.Lock()
 			if rf.state == "Leader" {
-				rf.BroadcastHeartbeat(true)
+				rf.notifyPeersForSync(true)
 				resetTimer(rf.heartbeatTimer, time.Duration(125)*time.Millisecond)
 			}
 			rf.mu.Unlock()
@@ -392,7 +392,7 @@ func (rf *Raft) startElection() {
 					if voteCount > len(rf.peers)/2 && rf.state == "Candidate" {
 						rf.state = "Leader"
 						log.DPrintf("server %d become Leader", rf.me)
-						rf.BroadcastHeartbeat(true)
+						rf.notifyPeersForSync(true)
 						rf.electionTimer.Stop()
 						resetTimer(rf.heartbeatTimer, time.Duration(125)*time.Millisecond)
 
