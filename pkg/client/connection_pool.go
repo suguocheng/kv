@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"kv/pkg/proto/kvpb"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 )
@@ -18,15 +20,18 @@ type ConnectionPool struct {
 	conns   map[string][]*grpc.ClientConn     // 按地址分组的连接
 	clients map[string][]kvpb.KVServiceClient // 按地址分组的客户端
 	config  *PoolConfig
+
+	stopCleanup chan struct{}
+	rrIndex     map[string]int // 轮询下标
 }
 
 // PoolConfig 连接池配置
 type PoolConfig struct {
 	MaxConnectionsPerHost int           // 每个主机的最大连接数
 	MinConnectionsPerHost int           // 每个主机的最小连接数
-	MaxIdleTime           time.Duration // 连接最大空闲时间
-	MaxLifetime           time.Duration // 连接最大生命周期
-	DialTimeout           time.Duration // 连接超时时间
+	MaxIdleTime           time.Duration // 连接最大空闲时间（预留，暂未严格实现）
+	MaxLifetime           time.Duration // 连接最大生命周期（预留，暂未严格实现）
+	DialTimeout           time.Duration // 拨号超时时间
 	KeepAliveTime         time.Duration // 保活时间
 	KeepAliveTimeout      time.Duration // 保活超时时间
 }
@@ -38,7 +43,7 @@ func DefaultPoolConfig() *PoolConfig {
 		MinConnectionsPerHost: 2,
 		MaxIdleTime:           30 * time.Minute,
 		MaxLifetime:           1 * time.Hour,
-		DialTimeout:           1 * time.Second, // 减少超时时间，避免测试时等待太久
+		DialTimeout:           1 * time.Second,
 		KeepAliveTime:         30 * time.Second,
 		KeepAliveTimeout:      5 * time.Second,
 	}
@@ -64,9 +69,11 @@ func NewConnectionPool(config *PoolConfig) *ConnectionPool {
 	}
 
 	pool := &ConnectionPool{
-		conns:   make(map[string][]*grpc.ClientConn),
-		clients: make(map[string][]kvpb.KVServiceClient),
-		config:  config,
+		conns:       make(map[string][]*grpc.ClientConn),
+		clients:     make(map[string][]kvpb.KVServiceClient),
+		config:      config,
+		stopCleanup: make(chan struct{}),
+		rrIndex:     make(map[string]int),
 	}
 
 	// 启动连接清理协程
@@ -80,33 +87,41 @@ func (p *ConnectionPool) GetClient(addr string) (kvpb.KVServiceClient, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	// 检查是否有可用连接
-	if clients, exists := p.clients[addr]; exists && len(clients) > 0 {
-		// 使用轮询方式选择连接
-		client := clients[0]
-		// 将使用的连接移到末尾（简单的轮询）
-		p.clients[addr] = append(clients[1:], client)
-		return client, nil
+	clients := p.clients[addr]
+	conns := p.conns[addr]
+
+	// 有可用客户端时做轮询（简单且性能好）
+	if len(clients) > 0 {
+		i := p.rrIndex[addr] % len(clients)
+		p.rrIndex[addr] = (i + 1) % len(clients)
+		return clients[i], nil
 	}
 
-	// 创建新连接
+	// 没有可用，按需创建，但要遵守上限
+	if p.config.MaxConnectionsPerHost > 0 && len(conns) >= p.config.MaxConnectionsPerHost {
+		return nil, fmt.Errorf("connection limit reached for %s", addr)
+	}
+
 	conn, err := p.createConnection(addr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create connection to %s: %v", addr, err)
 	}
 
+	// 只有连接成功后才添加到池中
 	client := kvpb.NewKVServiceClient(conn)
-
-	// 添加到连接池
 	p.conns[addr] = append(p.conns[addr], conn)
 	p.clients[addr] = append(p.clients[addr], client)
-
+	// 将轮询下标重置到 0（下次从头取，简单且正确）
+	p.rrIndex[addr] = 0
 	return client, nil
 }
 
-// createConnection 创建新的gRPC连接
+// createConnection 创建新的gRPC连接（阻塞拨号+超时）
 func (p *ConnectionPool) createConnection(addr string) (*grpc.ClientConn, error) {
-	// 使用新的 grpc.NewClient API
+	ctx, cancel := context.WithTimeout(context.Background(), p.config.DialTimeout)
+	defer cancel()
+
+	// 使用新的 API，并确保在超时内完成建连（等待 READY 或失败）
 	conn, err := grpc.NewClient(addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
@@ -115,45 +130,63 @@ func (p *ConnectionPool) createConnection(addr string) (*grpc.ClientConn, error)
 			PermitWithoutStream: true,
 		}),
 	)
-
 	if err != nil {
 		return nil, err
 	}
 
-	return conn, nil
+	// 主动等待连接至少进入可用状态，避免把“未连通”的连接放入池中
+	ready := make(chan struct{})
+	go func() {
+		for {
+			state := conn.GetState()
+			if state == connectivity.Ready {
+				close(ready)
+				return
+			}
+			if !conn.WaitForStateChange(context.Background(), state) {
+				// 连接已关闭
+				return
+			}
+		}
+	}()
+
+	select {
+	case <-ready:
+		return conn, nil
+	case <-ctx.Done():
+		conn.Close()
+		return nil, fmt.Errorf("dial timeout: %w", ctx.Err())
+	}
 }
 
-// AddServer 添加服务器到连接池
+// AddServer 添加服务器到连接池（预热）
 func (p *ConnectionPool) AddServer(addr string) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	// 如果已经存在，直接返回
 	if _, exists := p.conns[addr]; exists {
 		return nil
 	}
 
-	// 创建初始连接
 	successCount := 0
 	for i := 0; i < p.config.MinConnectionsPerHost; i++ {
+		if p.config.MaxConnectionsPerHost > 0 && len(p.conns[addr]) >= p.config.MaxConnectionsPerHost {
+			break
+		}
 		conn, err := p.createConnection(addr)
 		if err != nil {
-			// 在测试环境中，允许部分连接失败
 			fmt.Printf("Warning: failed to create initial connection %d to %s: %v\n", i, addr, err)
 			continue
 		}
-
 		client := kvpb.NewKVServiceClient(conn)
 		p.conns[addr] = append(p.conns[addr], conn)
 		p.clients[addr] = append(p.clients[addr], client)
 		successCount++
 	}
 
-	// 如果没有任何连接成功，返回错误
 	if successCount == 0 {
 		return fmt.Errorf("failed to create any initial connections to %s", addr)
 	}
-
 	return nil
 }
 
@@ -163,12 +196,12 @@ func (p *ConnectionPool) RemoveServer(addr string) {
 	defer p.mu.Unlock()
 
 	if conns, exists := p.conns[addr]; exists {
-		// 关闭所有连接
 		for _, conn := range conns {
 			conn.Close()
 		}
 		delete(p.conns, addr)
 		delete(p.clients, addr)
+		delete(p.rrIndex, addr)
 	}
 }
 
@@ -177,25 +210,31 @@ func (p *ConnectionPool) cleanupIdleConnections() {
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
-	for range ticker.C {
-		p.mu.Lock()
-
-		for addr, conns := range p.conns {
-			if len(conns) > p.config.MinConnectionsPerHost {
-				// 保留最小连接数，关闭多余的连接
-				excess := len(conns) - p.config.MinConnectionsPerHost
-				for i := 0; i < excess; i++ {
-					if len(conns) > 0 {
-						conn := conns[len(conns)-1]
-						conn.Close()
-						p.conns[addr] = conns[:len(conns)-1]
-						p.clients[addr] = p.clients[addr][:len(p.clients[addr])-1]
+	for {
+		select {
+		case <-ticker.C:
+			p.mu.Lock()
+			for addr, conns := range p.conns {
+				if len(conns) > p.config.MinConnectionsPerHost {
+					excess := len(conns) - p.config.MinConnectionsPerHost
+					for i := 0; i < excess; i++ {
+						if len(p.conns[addr]) == 0 {
+							break
+						}
+						idx := len(p.conns[addr]) - 1
+						p.conns[addr][idx].Close()
+						p.conns[addr] = p.conns[addr][:idx]
+						p.clients[addr] = p.clients[addr][:idx]
+						if p.rrIndex[addr] >= len(p.clients[addr]) {
+							p.rrIndex[addr] = 0
+						}
 					}
 				}
 			}
+			p.mu.Unlock()
+		case <-p.stopCleanup:
+			return
 		}
-
-		p.mu.Unlock()
 	}
 }
 
@@ -204,12 +243,14 @@ func (p *ConnectionPool) Close() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	close(p.stopCleanup)
 	for addr, conns := range p.conns {
 		for _, conn := range conns {
 			conn.Close()
 		}
 		delete(p.conns, addr)
 		delete(p.clients, addr)
+		delete(p.rrIndex, addr)
 	}
 }
 

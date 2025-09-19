@@ -99,7 +99,7 @@ func (kv *KV) cleanupExpiredKeys() {
 	}
 }
 
-// 从本地文件恢复快照
+// 从本地文件恢复快照数据
 func (kv *KV) RestoreFromSnapshot() error {
 	data, err := os.ReadFile(kv.snapshotPath)
 	if os.IsNotExist(err) || len(data) == 0 {
@@ -124,6 +124,34 @@ func (kv *KV) RestoreFromSnapshot() error {
 	}
 	kv.store.currentRevision = mvccStore.CurrentRevision
 	return nil
+}
+
+func (kv *KV) SerializeState() ([]byte, error) {
+	kv.mu.RLock()
+	defer kv.mu.RUnlock()
+
+	mvccStore := &kvpb.MVCCStore{}
+	nodes := kv.store.AllNodes()
+	for _, node := range nodes {
+		for _, version := range node.versions {
+			mvccStore.Pairs = append(mvccStore.Pairs, &kvpb.VersionedKVPair{
+				Key:             version.Key,
+				Value:           version.Value,
+				Ttl:             version.TTL,
+				CreatedRevision: version.CreatedRev,
+				ModRevision:     version.ModRev,
+				Version:         version.Version,
+				Deleted:         version.Deleted,
+			})
+		}
+	}
+	mvccStore.CurrentRevision = kv.store.currentRevision
+
+	data, err := proto.Marshal(mvccStore)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 // 从快照数据恢复快照
@@ -210,45 +238,6 @@ func (kv *KV) Close() error {
 	}
 
 	return nil
-}
-
-func (kv *KV) SerializeState() ([]byte, error) {
-	kv.mu.RLock()
-	defer kv.mu.RUnlock()
-
-	mvccStore := &kvpb.MVCCStore{}
-	nodes := kv.store.AllNodes()
-	for _, node := range nodes {
-		for _, version := range node.versions {
-			mvccStore.Pairs = append(mvccStore.Pairs, &kvpb.VersionedKVPair{
-				Key:             version.Key,
-				Value:           version.Value,
-				Ttl:             version.TTL,
-				CreatedRevision: version.CreatedRev,
-				ModRevision:     version.ModRev,
-				Version:         version.Version,
-				Deleted:         version.Deleted,
-			})
-		}
-	}
-	mvccStore.CurrentRevision = kv.store.currentRevision
-
-	data, err := proto.Marshal(mvccStore)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
-// CleanupWALFiles 清理已快照的WAL文件 - 使用快照覆盖点逻辑
-func (kv *KV) CleanupWALFiles(snapshotIndex uint64) error {
-	kv.mu.Lock()
-	defer kv.mu.Unlock()
-
-	// 更新最后快照索引
-	kv.lastSnapshotIndex = int(snapshotIndex)
-
-	return kv.walManager.CleanupWALFiles(snapshotIndex)
 }
 
 // GetWithTTL 获取键值对及其TTL信息
