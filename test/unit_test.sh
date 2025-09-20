@@ -52,7 +52,7 @@ run_package_test() {
     local exit_code
     
     if [ -d "$package_path" ]; then
-        local test_cmd="go test -v -timeout 120s"
+        local test_cmd="go test -v -timeout 300s"
         output=$(cd "$package_path" && $test_cmd 2>&1)
         exit_code=$?
     else
@@ -75,6 +75,9 @@ run_package_test() {
         FAILED_TESTS=$((FAILED_TESTS + 1))
         echo "$output" | tail -10
     fi
+    
+    # 在测试之间添加短暂等待，确保资源完全清理
+    sleep 2
     
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
 }

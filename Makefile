@@ -30,6 +30,19 @@ test-e2e:
 	@echo "运行端到端测试..."
 	cd test && ./e2e_test.sh
 
+# 运行统一分布式测试套件 (推荐)
+test-distributed:
+	@echo "运行统一分布式测试套件..."
+	cd test && ./distributed_test_suite.sh
+
+# 注意: 旧的分布式测试脚本已被整合到 test-distributed 中
+# 如需运行特定测试，请使用 make test-distributed
+
+# 运行故障模拟
+fault-sim:
+	@echo "故障模拟工具..."
+	cd test && ./fault_simulation.sh status
+
 # 运行性能基准测试
 test-benchmark:
 	@echo "运行性能基准测试..."
@@ -39,6 +52,14 @@ test-benchmark:
 test-all:
 	@echo "运行完整测试套件..."
 	cd test && ./run_all_tests.sh
+
+# 运行分布式测试 (推荐用于分布式系统测试)
+test-distributed-all:
+	@echo "运行完整分布式测试套件..."
+	@echo "1. 运行统一分布式测试套件..."
+	cd test && ./distributed_test_suite.sh
+	@echo "2. 运行故障模拟测试..."
+	cd test && ./fault_simulation.sh random 60 10
 
 # 运行Go单元测试
 test-go:

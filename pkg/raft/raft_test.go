@@ -2,6 +2,7 @@ package raft
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"testing"
@@ -9,6 +10,40 @@ import (
 
 	"kv/pkg/wal"
 )
+
+// getFreePort 获取一个可用的端口
+func getFreePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+
+	port := l.Addr().(*net.TCPAddr).Port
+
+	// 确保端口完全释放
+	time.Sleep(10 * time.Millisecond)
+
+	return port, nil
+}
+
+// generatePeerAddrs 生成动态端口地址
+func generatePeerAddrs(t *testing.T) map[int]string {
+	peerAddrs := make(map[int]string)
+	for i := 0; i < 3; i++ {
+		port, err := getFreePort()
+		if err != nil {
+			t.Fatalf("Failed to get free port: %v", err)
+		}
+		peerAddrs[i] = fmt.Sprintf("localhost:%d", port)
+	}
+	return peerAddrs
+}
 
 func setupTestRaft(t *testing.T, me int, peerAddrs map[int]string) (*Raft, string) {
 	// 创建临时目录
@@ -59,11 +94,7 @@ func cleanupTestRaft(rf *Raft, tempDir string) {
 
 func TestRaftBasicElection(t *testing.T) {
 	// 创建3个节点的Raft集群
-	peerAddrs := map[int]string{
-		0: "localhost:9200",
-		1: "localhost:9201",
-		2: "localhost:9202",
-	}
+	peerAddrs := generatePeerAddrs(t)
 
 	rafts := make([]*Raft, 3)
 	tempDirs := make([]string, 3)
@@ -97,11 +128,7 @@ func TestRaftBasicElection(t *testing.T) {
 
 func TestRaftLogReplication(t *testing.T) {
 	// 创建3个节点的Raft集群
-	peerAddrs := map[int]string{
-		0: "localhost:9210",
-		1: "localhost:9211",
-		2: "localhost:9212",
-	}
+	peerAddrs := generatePeerAddrs(t)
 
 	rafts := make([]*Raft, 3)
 	tempDirs := make([]string, 3)
@@ -162,11 +189,7 @@ func TestRaftLogReplication(t *testing.T) {
 }
 
 func TestRaftPersistence(t *testing.T) {
-	peerAddrs := map[int]string{
-		0: "localhost:9220",
-		1: "localhost:9221",
-		2: "localhost:9222",
-	}
+	peerAddrs := generatePeerAddrs(t)
 
 	// 创建第一个Raft实例
 	rf1, tempDir := setupTestRaft(t, 0, peerAddrs)
@@ -200,11 +223,7 @@ func TestRaftPersistence(t *testing.T) {
 }
 
 func TestRaftLeaderElectionTimeout(t *testing.T) {
-	peerAddrs := map[int]string{
-		0: "localhost:9230",
-		1: "localhost:9231",
-		2: "localhost:9232",
-	}
+	peerAddrs := generatePeerAddrs(t)
 
 	rafts := make([]*Raft, 3)
 	tempDirs := make([]string, 3)
@@ -256,11 +275,7 @@ func TestRaftLeaderElectionTimeout(t *testing.T) {
 }
 
 func TestRaftLogConsistency(t *testing.T) {
-	peerAddrs := map[int]string{
-		0: "localhost:9240",
-		1: "localhost:9241",
-		2: "localhost:9242",
-	}
+	peerAddrs := generatePeerAddrs(t)
 
 	rafts := make([]*Raft, 3)
 	tempDirs := make([]string, 3)
@@ -311,11 +326,7 @@ func TestRaftLogConsistency(t *testing.T) {
 }
 
 func TestRaftNetworkPartition(t *testing.T) {
-	peerAddrs := map[int]string{
-		0: "localhost:9250",
-		1: "localhost:9251",
-		2: "localhost:9252",
-	}
+	peerAddrs := generatePeerAddrs(t)
 
 	rafts := make([]*Raft, 3)
 	tempDirs := make([]string, 3)
@@ -363,11 +374,7 @@ func TestRaftNetworkPartition(t *testing.T) {
 }
 
 func TestRaftSnapshot(t *testing.T) {
-	peerAddrs := map[int]string{
-		0: "localhost:9260",
-		1: "localhost:9261",
-		2: "localhost:9262",
-	}
+	peerAddrs := generatePeerAddrs(t)
 
 	rf, tempDir := setupTestRaft(t, 0, peerAddrs)
 	defer cleanupTestRaft(rf, tempDir)
@@ -397,11 +404,7 @@ func TestRaftSnapshot(t *testing.T) {
 }
 
 func TestRaftConcurrentRequests(t *testing.T) {
-	peerAddrs := map[int]string{
-		0: "localhost:9270",
-		1: "localhost:9271",
-		2: "localhost:9272",
-	}
+	peerAddrs := generatePeerAddrs(t)
 
 	rafts := make([]*Raft, 3)
 	tempDirs := make([]string, 3)
@@ -457,11 +460,7 @@ func TestRaftConcurrentRequests(t *testing.T) {
 }
 
 func TestRaftStateTransitions(t *testing.T) {
-	peerAddrs := map[int]string{
-		0: "localhost:9280",
-		1: "localhost:9281",
-		2: "localhost:9282",
-	}
+	peerAddrs := generatePeerAddrs(t)
 
 	rf, tempDir := setupTestRaft(t, 0, peerAddrs)
 	defer cleanupTestRaft(rf, tempDir)
@@ -486,11 +485,7 @@ func TestRaftStateTransitions(t *testing.T) {
 }
 
 func TestRaftWALIntegration(t *testing.T) {
-	peerAddrs := map[int]string{
-		0: "localhost:9290",
-		1: "localhost:9291",
-		2: "localhost:9292",
-	}
+	peerAddrs := generatePeerAddrs(t)
 
 	rf, tempDir := setupTestRaft(t, 0, peerAddrs)
 	defer cleanupTestRaft(rf, tempDir)

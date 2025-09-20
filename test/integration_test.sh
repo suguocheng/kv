@@ -16,7 +16,7 @@ CLEAN_DATA_SCRIPT="$PROJECT_ROOT/scripts/clean_data.sh"
 source "$(dirname "$0")/output_formatter.sh"
 
 # 客户端命令 - 在项目根目录下运行以确保历史文件路径正确
-CLIENT_CMD="go run $PROJECT_ROOT/cmd/client/main.go $PROJECT_ROOT/cmd/client/handlers.go $PROJECT_ROOT/cmd/client/help.go"
+CLIENT_CMD="INTEGRATION_TEST=true go run $PROJECT_ROOT/cmd/client/main.go $PROJECT_ROOT/cmd/client/handlers.go $PROJECT_ROOT/cmd/client/help.go"
 
 # 客户端调用函数 - 确保在正确的目录下运行
 kv_client() {
@@ -71,12 +71,12 @@ run_integration_test() {
     local output
     output=$(timeout "$timeout"s bash -c "
         # 导入必要的变量和函数
-        PROJECT_ROOT='$PROJECT_ROOT'
-        CLIENT_CMD='$CLIENT_CMD'
+        export PROJECT_ROOT='$PROJECT_ROOT'
+        export CLIENT_CMD='$CLIENT_CMD'
         
         # 重新定义kv_client函数
         kv_client() {
-            cd \"\$PROJECT_ROOT\" && \$CLIENT_CMD
+            cd \"\$PROJECT_ROOT\" && eval \$CLIENT_CMD
         }
         
         # 执行测试命令

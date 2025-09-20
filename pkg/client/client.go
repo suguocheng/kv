@@ -146,18 +146,27 @@ func (ws *WatchStream) Close() {
 func NewClient(servers []string) *Client {
 	// 检测是否在测试环境中
 	var poolConfig *PoolConfig
-	if isTestEnvironment() {
+	if isIntegrationTestEnvironment() {
+		poolConfig = IntegrationTestPoolConfig()
+	} else if isTestEnvironment() {
 		poolConfig = TestPoolConfig()
 	}
 	return NewClientWithPool(servers, poolConfig)
 }
 
-// isTestEnvironment 检测是否在测试环境中
+// isTestEnvironment 检测是否在单元测试环境中
 func isTestEnvironment() bool {
 	// 检查是否在go test环境中
 	return strings.Contains(os.Args[0], "test") ||
 		strings.Contains(os.Args[0], ".test") ||
 		len(os.Args) > 0 && strings.Contains(os.Args[0], "go-build")
+}
+
+// isIntegrationTestEnvironment 检测是否在集成测试环境中
+func isIntegrationTestEnvironment() bool {
+	// 检查环境变量或命令行参数
+	return os.Getenv("INTEGRATION_TEST") == "true" ||
+		strings.Contains(strings.Join(os.Args, " "), "integration")
 }
 
 // NewClientWithPool 创建带连接池的客户端
