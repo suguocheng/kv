@@ -157,9 +157,10 @@ func NewClient(servers []string) *Client {
 // isTestEnvironment 检测是否在单元测试环境中
 func isTestEnvironment() bool {
 	// 检查是否在go test环境中
+	// 注意：go run也会产生go-build路径，所以需要更精确的检测
 	return strings.Contains(os.Args[0], "test") ||
 		strings.Contains(os.Args[0], ".test") ||
-		len(os.Args) > 0 && strings.Contains(os.Args[0], "go-build")
+		(len(os.Args) > 1 && strings.Contains(os.Args[1], "test"))
 }
 
 // isIntegrationTestEnvironment 检测是否在集成测试环境中

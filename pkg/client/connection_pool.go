@@ -38,7 +38,7 @@ type PoolConfig struct {
 func DefaultPoolConfig() *PoolConfig {
 	return &PoolConfig{
 		MaxConnectionsPerHost: 10,
-		MinConnectionsPerHost: 2,
+		MinConnectionsPerHost: 0, // 不预创建连接，按需创建
 		MaxIdleTime:           30 * time.Minute,
 		MaxLifetime:           1 * time.Hour,
 		DialTimeout:           1 * time.Second,
@@ -150,8 +150,8 @@ func (p *ConnectionPool) createConnection(addr string) (*grpc.ClientConn, error)
 		return nil, fmt.Errorf("connection timeout to %s", addr)
 	}
 
-	// 集成测试和生产环境：简化连接等待逻辑，直接返回连接
-	// 让gRPC在第一次调用时自动建立连接
+	// 对于非测试环境，直接返回连接
+	// gRPC连接是延迟建立的，在第一次调用时才会真正建立连接
 	return conn, nil
 }
 
@@ -178,6 +178,11 @@ func (p *ConnectionPool) AddServer(addr string) error {
 		p.conns[addr] = append(p.conns[addr], conn)
 		p.clients[addr] = append(p.clients[addr], client)
 		successCount++
+	}
+
+	// 如果MinConnectionsPerHost为0，则不需要预创建连接，直接返回成功
+	if p.config.MinConnectionsPerHost == 0 {
+		return nil
 	}
 
 	if successCount == 0 {
